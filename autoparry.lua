@@ -78,6 +78,7 @@ local IgnoreIds = {
 	134968158802175,
 	99309341097380,
 	83600639547203,
+	79688890917324,
 }
 
 local ParriedAnimation = {
@@ -197,7 +198,6 @@ local RawConfig = {
 		["rbxassetid://115234849770695"] = { DisplayName = "2ndM1" },
 		["rbxassetid://85554794950365"] = { DisplayName = "3rdM1" },
 		["rbxassetid://73777821288331"] = { DisplayName = "4thM1" },
-		["rbxassetid://79688890917324"] = { DisplayName = "M2", ReactionTime = 0.3 },
 		M1Time = 0.15,
 	},
 	HakariOtherAnims = {
@@ -618,12 +618,12 @@ local function UpdateAnimationRegistry(animKey, anim, now, currentTrackTime, att
 	return reg
 end
 
-local function ExecuteParry(reg, attackConfig)
+local function ExecuteParry(reg, attackConfig, animIdStr)
 	local now = os.clock()
 	if (now - reg.LastExecuteTime) < EXECUTE_DEBOUNCE then
 		if LogAllAnims then
-			print(string.format("[AutoParry ACTION] %s | DEBOUNCE_SKIP | %.3fs since last",
-				attackConfig.DisplayName, now - reg.LastExecuteTime))
+			print(string.format("[AutoParry ACTION] %s | DEBOUNCE_SKIP | %.3fs since last | %s",
+				attackConfig.DisplayName, now - reg.LastExecuteTime, animIdStr))
 		end
 		return
 	end
@@ -635,8 +635,8 @@ local function ExecuteParry(reg, attackConfig)
 		if AutoParryEnabled then
 			Dodge()
 			if LogAllAnims then
-				print(string.format("[AutoParry ACTION] %s | DODGE | %s",
-					attackConfig.DisplayName, attackConfig.Style))
+				print(string.format("[AutoParry ACTION] %s | DODGE | %s | %s",
+					attackConfig.DisplayName, animIdStr, attackConfig.Style))
 			end
 		end
 	else
@@ -644,15 +644,15 @@ local function ExecuteParry(reg, attackConfig)
 			LastPendingRegData = reg
 			BlockStart(reg.BlockStart)
 			if LogAllAnims then
-				print(string.format("[AutoParry ACTION] %s | BLOCK | %s",
-					attackConfig.DisplayName, attackConfig.Style))
+				print(string.format("[AutoParry ACTION] %s | BLOCK | %s | %s",
+					attackConfig.DisplayName, animIdStr, attackConfig.Style))
 			end
 		elseif reg.DidALoop then
 			reg.DidALoop = false
 			BlockStart(reg.BlockStart)
 			if LogAllAnims then
-				print(string.format("[AutoParry ACTION] %s | BLOCK (loop) | %s",
-					attackConfig.DisplayName, attackConfig.Style))
+				print(string.format("[AutoParry ACTION] %s | BLOCK (loop) | %s | %s",
+					attackConfig.DisplayName, animIdStr, attackConfig.Style))
 			end
 		end
 	end
@@ -720,8 +720,8 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 	local reg = UpdateAnimationRegistry(animKey, anim, now, anim.TimePosition or 0, attackConfig, character)
 	if reg.Processed then
 		if LogAllAnims then
-			print(string.format("[AutoParry ACTION] %s | SKIP (already processed) | %s",
-				attackConfig.DisplayName, attackConfig.Style))
+			print(string.format("[AutoParry ACTION] %s | SKIP (already processed) | %s | %s",
+				attackConfig.DisplayName, animIdStr, attackConfig.Style))
 		end
 		return
 	end
@@ -729,8 +729,8 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 	local dist = (targetRoot.Position - localRoot.Position).Magnitude
 	if dist > AutoParryRange then
 		if LogAllAnims then
-			print(string.format("[AutoParry ACTION] %s | SKIP (out of range %.1f > %d) | %s",
-				attackConfig.DisplayName, dist, AutoParryRange, attackConfig.Style))
+			print(string.format("[AutoParry ACTION] %s | SKIP (out of range %.1f > %d) | %s | %s",
+				attackConfig.DisplayName, dist, AutoParryRange, animIdStr, attackConfig.Style))
 		end
 		return
 	end
@@ -746,8 +746,8 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 
 	if not CheckDirection(character, localChar, localRoot, targetRoot, attackConfig) then
 		if LogAllAnims then
-			print(string.format("[AutoParry ACTION] %s | SKIP (wrong direction) | %s",
-				attackConfig.DisplayName, attackConfig.Style))
+			print(string.format("[AutoParry ACTION] %s | SKIP (wrong direction) | %s | %s",
+				attackConfig.DisplayName, animIdStr, attackConfig.Style))
 		end
 		return
 	end
@@ -755,19 +755,19 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 	if reg.RandomNum > ProbabilityToParry then
 		reg.Processed = true
 		if LogAllAnims then
-			print(string.format("[AutoParry ACTION] %s | SKIP (probability %d > %d) | %s",
-				attackConfig.DisplayName, reg.RandomNum, ProbabilityToParry, attackConfig.Style))
+			print(string.format("[AutoParry ACTION] %s | SKIP (probability %d > %d) | %s | %s",
+				attackConfig.DisplayName, reg.RandomNum, ProbabilityToParry, animIdStr, attackConfig.Style))
 		end
 		return
 	end
 
 	local blockExpireTimer = reg.BlockExpire - now
 	if now >= reg.BlockStart and blockExpireTimer >= 0 then
-		ExecuteParry(reg, attackConfig)
+		ExecuteParry(reg, attackConfig, animIdStr)
 	else
 		if LogAllAnims then
-			print(string.format("[AutoParry ACTION] %s | SKIP (not in block window: now=%.3f start=%.3f expire=%.3f) | %s",
-				attackConfig.DisplayName, now, reg.BlockStart, reg.BlockExpire, attackConfig.Style))
+			print(string.format("[AutoParry ACTION] %s | SKIP (not in block window: now=%.3f start=%.3f expire=%.3f) | %s | %s",
+				attackConfig.DisplayName, now, reg.BlockStart, reg.BlockExpire, animIdStr, attackConfig.Style))
 		end
 	end
 end
