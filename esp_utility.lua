@@ -9,6 +9,10 @@ ESP_Utility.__index = ESP_Utility
 
 ESP_Utility.TrackersToUpdate = {}
 
+if _G.GakranEspCleanup then
+	pcall(_G.GakranEspCleanup)
+end
+
 local function getSettings()
 	return _G.GakuranEspSettings or {
 		BoxMode = "bounding",
@@ -22,6 +26,17 @@ local function getSettings()
 		HealthColor = Color3.fromRGB(100, 255, 100),
 		TextSize = 12,
 	}
+end
+
+local cachedSettings = nil
+local cachedSettingsTime = 0
+local function getSettingsCached()
+	local now = os.clock()
+	if not cachedSettings or now - cachedSettingsTime > 0.5 then
+		cachedSettings = getSettings()
+		cachedSettingsTime = now
+	end
+	return cachedSettings
 end
 
 local function magnitude(p1, p2)
@@ -118,11 +133,7 @@ end
 
 function ESP_Utility:_IsAlive()
 	if not self.Object then return false end
-	local InWorkspace = self.Object:IsDescendantOf(game.Workspace)
-	if not InWorkspace then
-		return false
-	end
-	return true
+	return self.Object.Parent ~= nil
 end
 
 local CORNER_OFFSETS = {
@@ -133,7 +144,7 @@ local CORNER_OFFSETS = {
 }
 
 function ESP_Utility:_Get2D_Bounds()
-	local S = getSettings()
+	local S = getSettingsCached()
 	local position = self.Object.Position
 	local size = self.Object.Size
 
@@ -202,7 +213,7 @@ end
 
 function ESP_Utility:_Position(DrawingObject, Y_Offset)
 	local Session = self.Session
-	local S = getSettings()
+	local S = getSettingsCached()
 	local FontSize = S.TextSize or 20
 	local Padding = 5
 
@@ -225,7 +236,7 @@ function ESP_Utility:_Position(DrawingObject, Y_Offset)
 end
 
 function ESP_Utility:_DetermineVisibility()
-	local S = getSettings()
+	local S = getSettingsCached()
 	local isOffScreen = self.TrackerOffScreen
 	local isVisible = self.Visible
 	local shouldRender = isVisible and not isOffScreen
@@ -282,7 +293,7 @@ function ESP_Utility:_Update()
 	local ShouldRender = self:_DetermineVisibility()
 	if not ShouldRender then return end
 
-	local S = getSettings()
+	local S = getSettingsCached()
 	local boxWidth = max_x - min_x
 	self.Session = {
 		CenterX = min_x + (boxWidth / 2),
@@ -491,6 +502,7 @@ end
 
 local espLastUpdate = 0
 UpdateThread = RunService.RenderStepped:Connect(function(dt)
+	if not next(ESP_Utility.TrackersToUpdate) then return end
 	local now = os.clock()
 	if now - espLastUpdate < 0.033 then return end
 	espLastUpdate = now
@@ -505,6 +517,23 @@ UpdateThread = RunService.RenderStepped:Connect(function(dt)
 		end
 	end
 end)
+
+function ESP_Utility:CleanupAll()
+	if UpdateThread then
+		pcall(function() UpdateThread:Disconnect() end)
+		UpdateThread = nil
+	end
+	for i, v in pairs(ESP_Utility.TrackersToUpdate) do
+		if v and v.Destroy then
+			pcall(function() v:Destroy() end)
+		end
+		ESP_Utility.TrackersToUpdate[i] = nil
+	end
+end
+
+_G.GakranEspCleanup = function()
+	pcall(function() ESP_Utility:CleanupAll() end)
+end
 
 print("[ESP_Utility] Functions were imported v2.0 (Gakuran customized)")
 
