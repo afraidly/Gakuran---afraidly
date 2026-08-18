@@ -81,6 +81,8 @@ local IgnoreIds = {
 	79688890917324,
 	71385851727754,
 	108803307415813,
+	86740216609625,
+	91433537350586,
 }
 
 local ParriedAnimation = {
@@ -200,10 +202,8 @@ local RawConfig = {
 		["rbxassetid://115234849770695"] = { DisplayName = "2ndM1" },
 		["rbxassetid://85554794950365"] = { DisplayName = "3rdM1" },
 		["rbxassetid://73777821288331"] = { DisplayName = "4thM1" },
-		["rbxassetid://86740216609625"] = { DisplayName = "M2", ReactionTime = 0.3 },
-		["rbxassetid://91433537350586"] = { DisplayName = "M2", ReactionTime = 0.3 },
 		["rbxassetid://127159892882325"] = { DisplayName = "M2", ReactionTime = 0.3 },
-		M1Time = 0.15,
+		M1Time = 0.12,
 	},
 	HakariOtherAnims = {
 		["rbxassetid://126612786608030"] = { DisplayName = "1stM1" },
@@ -250,7 +250,7 @@ local ParryWindow = 0.2
 local ProbabilityToParry = 100
 local DefaultReactionTime = 0.1
 local ParryOffset = 0
-local BlockHoldTime = 0.27
+local BlockHoldTime = 0.2
 local IncludeLocalCharacter = false
 
 local PARRY_KEY = string.byte("F")
@@ -650,14 +650,14 @@ local function ExecuteParry(reg, attackConfig, animIdStr)
 	else
 		if LastPendingRegData ~= reg then
 			LastPendingRegData = reg
-			BlockStart(reg.BlockStart)
+			BlockStart(os.clock())
 			if LogAllAnims then
 				print(string.format("[AutoParry ACTION] %s | BLOCK | %s | %s",
 					attackConfig.DisplayName, animIdStr, attackConfig.Style))
 			end
 		elseif reg.DidALoop then
 			reg.DidALoop = false
-			BlockStart(reg.BlockStart)
+			BlockStart(os.clock())
 			if LogAllAnims then
 				print(string.format("[AutoParry ACTION] %s | BLOCK (loop) | %s | %s",
 					attackConfig.DisplayName, animIdStr, attackConfig.Style))
