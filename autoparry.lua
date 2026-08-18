@@ -576,14 +576,21 @@ end
 -- ==========================================
 
 local ConstLatency = 0.018
-local EXECUTE_DEBOUNCE = 0.5
+local EXECUTE_DEBOUNCE = 0.15
 local AutoDodgeEnabled = true
 
 local function UpdateAnimationRegistry(animKey, anim, now, currentTrackTime, attackConfig, targetChar)
-	if not AnimationRegistry[animKey] then
+	local reg = AnimationRegistry[animKey]
+
+	if reg and reg.AnimationId ~= anim.AnimationId then
+		reg = nil
+		AnimationRegistry[animKey] = nil
+	end
+
+	if not reg then
 		local adjustedNow = now - ConstLatency
 		local blockStart, blockExpire = CalculateParryTiming(attackConfig, adjustedNow, targetChar)
-		AnimationRegistry[animKey] = {
+		reg = {
 			StartTime = adjustedNow,
 			Processed = false,
 			CurrentTrackTime = currentTrackTime,
@@ -594,9 +601,9 @@ local function UpdateAnimationRegistry(animKey, anim, now, currentTrackTime, att
 			RandomNum = math.random(1, 100),
 			LastExecuteTime = 0,
 		}
+		AnimationRegistry[animKey] = reg
 	end
 
-	local reg = AnimationRegistry[animKey]
 	if reg.CurrentTrackTime and (currentTrackTime < reg.CurrentTrackTime) then
 		local blockStart, blockExpire = CalculateParryTiming(attackConfig, now - currentTrackTime, targetChar)
 		reg.Processed = false
