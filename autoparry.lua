@@ -772,6 +772,42 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 	end
 end
 
+local lastLogScan = 0
+local function LogTargetAnimations()
+	if not SelectedFolder then return end
+	local now = os.clock()
+	if now - lastLogScan < 0.016 then return end
+	lastLogScan = now
+
+	local folderInst = Workspace:FindFirstChild(SelectedFolder)
+	if not folderInst then return end
+
+	for _, character in ipairs(folderInst:GetChildren()) do
+		if not character or not character.Parent then continue end
+		if not IsCombatCharacter(character) then continue end
+
+		local activeAnims = GetActiveAnimsDict(character)
+		for _, anim in pairs(activeAnims) do
+			if not anim.AnimationId then continue end
+			local animIdStr = tostring(anim.AnimationId)
+			local charName = character.Name or "?"
+			local key = charName .. animIdStr
+			if LoggedAnimIds[key] then continue end
+			LoggedAnimIds[key] = true
+
+			local attackConfig = GameConfig[animIdStr]
+			if attackConfig then
+				print(string.format("[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | %s | %s | RT: %.2fs",
+					charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0,
+					attackConfig.Style, attackConfig.DisplayName, attackConfig.ReactionTime or DefaultReactionTime))
+			else
+				print(string.format("[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | UNKNOWN",
+					charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0))
+			end
+		end
+	end
+end
+
 local function EvaluateParryTriggers()
 	local localChar = LocalPlayer.Character
 	if not localChar then return end
@@ -1401,7 +1437,6 @@ end)
 local lastCycleCheck = 0
 
 local parryConn = RS.Heartbeat:Connect(function()
-	if not AutoParryEnabled and not iskeypressed(0x58) then return end
 	if not isrbxactive() then return end
 
 	if iskeypressed(0x58) then
@@ -1410,6 +1445,10 @@ local parryConn = RS.Heartbeat:Connect(function()
 			lastXCycle = now
 			CycleEvent()
 		end
+	end
+
+	if LogAllAnims or DebugAnimsEnabled then
+		LogTargetAnimations()
 	end
 
 	if not AutoParryEnabled then return end
