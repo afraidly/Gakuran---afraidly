@@ -870,11 +870,41 @@ local function EvaluateParryTriggers()
 		end
 	end
 
+	local now = os.clock()
 	for key, val in pairs(AnimationRegistry) do
 		if not currentActiveIds[key] then
-			AnimationRegistry[key] = nil
-			if LastPendingRegData == val then
-				LastPendingRegData = nil
+			if not val.Processed and val.BlockExpire and val.BlockExpire > now then
+				if LogAllAnims then
+					print(string.format("[AutoParry ACTION] %s | ANIM ENDED - keeping registry (block window still pending: expire=%.3f now=%.3f) | %s",
+						val.AnimationId and GameConfig[tostring(val.AnimationId)] and GameConfig[tostring(val.AnimationId)].DisplayName or "?",
+						val.BlockExpire, now, tostring(val.AnimationId)))
+				end
+			else
+				AnimationRegistry[key] = nil
+				if LastPendingRegData == val then
+					LastPendingRegData = nil
+				end
+			end
+		end
+	end
+
+	for key, reg in pairs(AnimationRegistry) do
+		if not reg.Processed and reg.AnimationId then
+			local attackConfig = GameConfig[tostring(reg.AnimationId)]
+			if attackConfig and now >= reg.BlockStart and (reg.BlockExpire - now) >= 0 then
+				local dist = 0
+				if localRoot then
+					for _, character in ipairs(TargetCharacters) do
+						if character and character.Parent then
+							local targetRoot = character:FindFirstChild("HumanoidRootPart")
+							if targetRoot and reg.LastExecuteTime then
+								dist = (targetRoot.Position - localRoot.Position).Magnitude
+								break
+							end
+						end
+					end
+				end
+				ExecuteParry(reg, attackConfig, tostring(reg.AnimationId))
 			end
 		end
 	end
