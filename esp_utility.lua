@@ -20,7 +20,7 @@ local function getSettings()
 		NameColor = Color3.fromRGB(255, 255, 255),
 		DistanceColor = Color3.fromRGB(180, 180, 180),
 		HealthColor = Color3.fromRGB(100, 255, 100),
-		TextSize = 13,
+		TextSize = 12,
 	}
 end
 
@@ -368,7 +368,7 @@ end
 function ESP_Utility:RecalculateOffsets()
 	local S = getSettings()
 	local totalLines = 0
-	local FontSize = S.TextSize or 13
+	local FontSize = S.TextSize or 12
 
 	for _, reference in ipairs(self.DrawingOrder) do
 		local data = self.Drawings[reference]
@@ -394,7 +394,7 @@ function ESP_Utility:AddText(Reference, NewColor, Value, Callback)
 	NewText.Center = false
 	NewText.Outline = true
 	NewText.Color = NewColor or Color3.fromRGB(200, 200, 200)
-	NewText.Size = S.TextSize or 13
+	NewText.Size = S.TextSize or 12
 
 	local currentText = tostring((Callback and Callback()) or Value or "")
 	local currentLineCount = GetLineCount(currentText)
@@ -489,16 +489,13 @@ function ESP_Utility:Destroy()
 	setmetatable(self, nil)
 end
 
+local espLastUpdate = 0
 UpdateThread = RunService.RenderStepped:Connect(function(dt)
-	local keys = {}
-	for i in pairs(ESP_Utility.TrackersToUpdate) do
-		table.insert(keys, i)
-	end
+	local now = os.clock()
+	if now - espLastUpdate < 0.033 then return end
+	espLastUpdate = now
 
-	for idx = 1, #keys do
-		local i = keys[idx]
-		local v = ESP_Utility.TrackersToUpdate[i]
-
+	for i, v in pairs(ESP_Utility.TrackersToUpdate) do
 		if v then
 			if not v.Name then
 				ESP_Utility.TrackersToUpdate[i] = nil
