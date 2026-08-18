@@ -1147,7 +1147,7 @@ local espBoxSec = espSub:Section("Box", "Left")
 local espTextSec = espSub:Section("Text", "Left")
 local espColSec = espSub:Section("Colors", "Right")
 
-espBoxSec:Dropdown("box mode", "bounding", {"bounding", "static"}, false, function(list)
+espBoxSec:Dropdown("box mode", {"bounding"}, {"bounding", "static"}, false, function(list)
 	if list and list[1] then
 		EspSettings.BoxMode = list[1]
 	end
