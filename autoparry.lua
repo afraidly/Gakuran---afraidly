@@ -1,5 +1,6 @@
 -- Gakuran Auto-Parry Module (separate from autoplay)
 -- Based on the original gakran.lua by artxficial
+-- Loaded by autoplay.lua via loadstring
 
 local RS = game:GetService("RunService")
 local Players = game:GetService("Players")
@@ -793,8 +794,8 @@ local function LogTargetAnimations()
 		if not character or not character.Parent then continue end
 		if not IsCombatCharacter(character) then continue end
 
-		local activeAnims = GetActiveAnimsDict(character)
-		for _, anim in pairs(activeAnims) do
+		local tracks = Tracker:Update(character, true)
+		for _, anim in ipairs(tracks) do
 			if not anim.AnimationId then continue end
 			local animIdStr = tostring(anim.AnimationId)
 			local charName = character.Name or "?"
@@ -802,15 +803,21 @@ local function LogTargetAnimations()
 			if LoggedAnimIds[key] then continue end
 			LoggedAnimIds[key] = true
 
+			local numericId = tonumber(string.match(animIdStr, "%d+"))
+			local isIgnored = numericId and table.find(IgnoreIds, numericId) or false
 			local attackConfig = GameConfig[animIdStr]
-			if attackConfig then
-				print(string.format("[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | %s | %s | RT: %.2fs",
-					charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0,
-					attackConfig.Style, attackConfig.DisplayName, attackConfig.ReactionTime or DefaultReactionTime))
+
+			local tag
+			if isIgnored then
+				tag = "IGNORED"
+			elseif attackConfig then
+				tag = string.format("%s | %s | RT: %.2fs", attackConfig.Style, attackConfig.DisplayName, attackConfig.ReactionTime or DefaultReactionTime)
 			else
-				print(string.format("[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | UNKNOWN",
-					charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0))
+				tag = "UNKNOWN"
 			end
+
+			print(string.format("[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | %s",
+				charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0, tag))
 		end
 	end
 end
