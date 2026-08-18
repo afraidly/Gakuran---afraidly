@@ -252,6 +252,21 @@ local PARRY_DISTANCE = 15
 -- ESP Utility
 -- ==========================================
 
+local ESP_Utility = nil
+pcall(function()
+	local url = "https://raw.githubusercontent.com/afraidly/Gakuran---afraidly/refs/heads/main/esp_utility.lua"
+	local src = game:HttpGet(url)
+	if src and #src > 100 then
+		loadstring(src)()
+	end
+end)
+ESP_Utility = _G.ESP_Utility or ESP_Utility
+if ESP_Utility then
+	print("[AutoParry] ESP Utility loaded")
+else
+	warn("[AutoParry] ESP Utility failed to load")
+end
+
 -- ==========================================
 -- Animation Tracker
 -- ==========================================
@@ -330,6 +345,7 @@ local EspSettings = {
 	HealthColor = Color3.fromRGB(100, 255, 100),
 	TextSize = 13,
 }
+_G.GakuranEspSettings = EspSettings
 
 local COLOR_WHITE = Color3.fromRGB(255, 255, 255)
 local COLOR_RED = Color3.fromRGB(255, 50, 50)
@@ -680,14 +696,12 @@ local function EvaluateParryTriggers()
 		end
 
 		local dist = (targetRoot.Position - localRoot.Position).Magnitude
-		local espData = EspTrackers[character]
-		if espData and espData.Box then
+		local tracker = EspTrackers[character]
+		if tracker and tracker.ChangeText then
 			if dist <= AutoParryRange then
-				espData.Box.Color = COLOR_GREEN
-				if espData.NameText then espData.NameText.Color = COLOR_GREEN end
+				tracker:ChangeText("Name", character.Name .. " IN RANGE", COLOR_GREEN)
 			else
-				espData.Box.Color = EspSettings.BoxColor
-				if espData.NameText then espData.NameText.Color = EspSettings.NameColor end
+				tracker:ChangeText("Name", character.Name, EspSettings.NameColor)
 			end
 		end
 
@@ -815,199 +829,16 @@ end
 -- ==========================================
 
 local function ClearAllEspTrackers()
-	for char, data in pairs(EspTrackers) do
-		if data then
-			for _, drawing in ipairs(data.Drawings or {}) do
-				pcall(function() drawing:Remove() end)
+	if not ESP_Utility then return end
+	for char, tracker in pairs(EspTrackers) do
+		if tracker and tracker.Destroy then
+			if ESP_Utility.TrackersToUpdate then
+				ESP_Utility.TrackersToUpdate[tracker.Object and tracker.Object.Address or char] = nil
 			end
+			pcall(function() tracker:Destroy() end)
 		end
 	end
 	EspTrackers = {}
-end
-
-local function WorldToScreen3(worldPos)
-	local cam = Workspace.CurrentCamera
-	if not cam then return nil, nil end
-	local screenPos, onScreen = cam:WorldToViewportPoint(worldPos)
-	return Vector2.new(screenPos.X, screenPos.Y), onScreen
-end
-
-local function GetCharacterBounds(char)
-	local hrp = safeGet(function() return char:FindFirstChild("HumanoidRootPart") end)
-	if not hrp then return nil end
-	local pos = safeGet(function() return hrp.Position end)
-	if not pos then return nil end
-
-	if EspSettings.BoxMode == "static" then
-		local screenPos, onScreen = WorldToScreen3(pos)
-		if not screenPos then return nil end
-		local cam = Workspace.CurrentCamera
-		local dist = safeGet(function()
-			return (cam.CFrame.Position - pos).Magnitude
-		end) or 10
-		local boxHeight = math.clamp(800 / dist, 20, 300)
-		local boxWidth = boxHeight * 0.6
-		return {
-			x = screenPos.X - boxWidth / 2,
-			y = screenPos.Y - boxHeight / 2,
-			w = boxWidth,
-			h = boxHeight,
-			screenPos = screenPos,
-			onScreen = onScreen,
-			dist = dist,
-		}
-	else
-		local head = safeGet(function() return char:FindFirstChild("Head") end)
-		local rootPos = pos
-		local headPos = head and safeGet(function() return head.Position end) or (pos + Vector3.new(0, 3, 0))
-		local topScreen, topOn = WorldToScreen3(headPos + Vector3.new(0, 1, 0))
-		local botScreen, botOn = WorldToScreen3(rootPos - Vector3.new(0, 3, 0))
-		if not topScreen or not botScreen then return nil end
-		local onScreen = topOn or botOn
-		local minX = math.min(topScreen.X, botScreen.X)
-		local maxX = math.max(topScreen.X, botScreen.X)
-		local minY = math.min(topScreen.Y, botScreen.Y)
-		local maxY = math.max(topScreen.Y, botScreen.Y)
-		local w = maxX - minX
-		local h = maxY - minY
-		if w < 5 or h < 5 then return nil end
-		local cam = Workspace.CurrentCamera
-		local dist = safeGet(function()
-			return (cam.CFrame.Position - pos).Magnitude
-		end) or 10
-		return {
-			x = minX,
-			y = minY,
-			w = w,
-			h = h,
-			screenPos = Vector2.new((minX + maxX) / 2, (minY + maxY) / 2),
-			onScreen = onScreen,
-			dist = dist,
-		}
-	end
-end
-
-local function CreateEspForCharacter(character)
-	local data = { Drawings = {}, Character = character }
-	local box = Drawing.new("Square")
-	box.Filled = false
-	box.Thickness = EspSettings.BoxThickness
-	box.Color = EspSettings.BoxColor
-	box.ZIndex = 10
-	box.Visible = false
-	table.insert(data.Drawings, box)
-	data.Box = box
-
-	if EspSettings.ShowName then
-		local nameText = Drawing.new("Text")
-		nameText.Text = character.Name or "?"
-		nameText.Color = EspSettings.NameColor
-		nameText.Size = EspSettings.TextSize
-		nameText.Center = true
-		nameText.Outline = true
-		nameText.ZIndex = 11
-		nameText.Visible = false
-		table.insert(data.Drawings, nameText)
-		data.NameText = nameText
-	end
-
-	if EspSettings.ShowDistance then
-		local distText = Drawing.new("Text")
-		distText.Text = ""
-		distText.Color = EspSettings.DistanceColor
-		distText.Size = EspSettings.TextSize - 1
-		distText.Center = true
-		distText.Outline = true
-		distText.ZIndex = 11
-		distText.Visible = false
-		table.insert(data.Drawings, distText)
-		data.DistText = distText
-	end
-
-	if EspSettings.ShowHealth then
-		local healthBar = Drawing.new("Square")
-		healthBar.Filled = true
-		healthBar.Color = EspSettings.HealthColor
-		healthBar.ZIndex = 10
-		healthBar.Visible = false
-		table.insert(data.Drawings, healthBar)
-		data.HealthBar = healthBar
-
-		local healthBg = Drawing.new("Square")
-		healthBg.Filled = true
-		healthBg.Color = Color3.fromRGB(0, 0, 0)
-		healthBg.Transparency = 0.5
-		healthBg.ZIndex = 9
-		healthBg.Visible = false
-		table.insert(data.Drawings, healthBg)
-		data.HealthBg = healthBg
-	end
-
-	return data
-end
-
-local function UpdateEspForCharacter(data)
-	local char = data.Character
-	if not char or not char.Parent then return false end
-	local bounds = GetCharacterBounds(char)
-	if not bounds then
-		for _, d in ipairs(data.Drawings) do d.Visible = false end
-		return false
-	end
-	if not bounds.onScreen then
-		for _, d in ipairs(data.Drawings) do d.Visible = false end
-		return false
-	end
-
-	data.Box.Position = Vector2.new(bounds.x, bounds.y)
-	data.Box.Size = Vector2.new(bounds.w, bounds.h)
-	data.Box.Thickness = EspSettings.BoxThickness
-	data.Box.Color = EspSettings.BoxColor
-	data.Box.Visible = true
-
-	local yOffset = 0
-	if data.NameText then
-		data.NameText.Visible = EspSettings.ShowName
-		if EspSettings.ShowName then
-			data.NameText.Text = char.Name or "?"
-			data.NameText.Color = EspSettings.NameColor
-			data.NameText.Size = EspSettings.TextSize
-			data.NameText.Position = Vector2.new(bounds.screenPos.X, bounds.y - EspSettings.TextSize - 2)
-			yOffset = EspSettings.TextSize + 2
-		end
-	end
-
-	if data.DistText then
-		data.DistText.Visible = EspSettings.ShowDistance
-		if EspSettings.ShowDistance then
-			data.DistText.Text = string.format("[%.0fm]", bounds.dist)
-			data.DistText.Color = EspSettings.DistanceColor
-			data.DistText.Size = EspSettings.TextSize - 1
-			data.DistText.Position = Vector2.new(bounds.screenPos.X, bounds.y - yOffset - EspSettings.TextSize)
-		end
-	end
-
-	if data.HealthBar and data.HealthBg then
-		data.HealthBar.Visible = EspSettings.ShowHealth
-		data.HealthBg.Visible = EspSettings.ShowHealth
-		if EspSettings.ShowHealth then
-			local hum = safeGet(function() return char:FindFirstChildWhichIsA("Humanoid") end)
-			local hp = hum and safeGet(function() return hum.Health end) or 0
-			local maxHp = hum and safeGet(function() return hum.MaxHealth end) or 100
-			local ratio = math.clamp(hp / maxHp, 0, 1)
-			local barW = 3
-			local barH = bounds.h
-			local hpH = barH * ratio
-			data.HealthBg.Position = Vector2.new(bounds.x - barW - 2, bounds.y)
-			data.HealthBg.Size = Vector2.new(barW, barH)
-			data.HealthBar.Position = Vector2.new(bounds.x - barW - 2, bounds.y + (barH - hpH))
-			data.HealthBar.Size = Vector2.new(barW, hpH)
-			local hue = ratio > 0.5 and Color3.fromRGB(50, 255, 50) or ratio > 0.25 and Color3.fromRGB(255, 200, 50) or Color3.fromRGB(255, 50, 50)
-			data.HealthBar.Color = hue
-		end
-	end
-
-	return true
 end
 
 local function UpdateTargetCharacters(charactersList)
@@ -1015,9 +846,18 @@ local function UpdateTargetCharacters(charactersList)
 	TargetCharacters = {}
 	for _, character in ipairs(charactersList) do
 		table.insert(TargetCharacters, character)
-		if character and safeGet(function() return character:FindFirstChild("HumanoidRootPart") end) then
-			local data = CreateEspForCharacter(character)
-			EspTrackers[character] = data
+		local hrp = safeGet(function() return character:FindFirstChild("HumanoidRootPart") end)
+		if character and hrp and ESP_Utility then
+			pcall(function()
+				local tracker = ESP_Utility.NewTracker(hrp, character.Name, EspSettings.BoxColor)
+				if tracker then
+					if tracker.Drawings and tracker.Drawings["Square"] then
+						tracker.Drawings["Square"].Drawing.Thickness = EspSettings.BoxThickness
+					end
+					tracker:AddText("CurrentlyPlaying", nil, "???")
+				end
+				EspTrackers[character] = tracker
+			end)
 		end
 	end
 end
@@ -1449,36 +1289,11 @@ pcall(function()
 end)
 
 -- ==========================================
--- ESP Render Loop
--- ==========================================
-
-local lastEspRender = 0
-local espConn = RS.RenderStepped:Connect(function()
-	if not isrbxactive() then return end
-	local now = os.clock()
-	if now - lastEspRender < 0.033 then return end
-	lastEspRender = now
-
-	for char, data in pairs(EspTrackers) do
-		if data then
-			if not char or not char.Parent then
-				for _, d in ipairs(data.Drawings or {}) do
-					pcall(function() d.Visible = false end)
-				end
-				continue
-			end
-			pcall(function() UpdateEspForCharacter(data) end)
-		end
-	end
-end)
-
--- ==========================================
 -- Cleanup
 -- ==========================================
 
 _G.GakuranParryCleanup = function()
 	pcall(function() parryConn:Disconnect() end)
-	pcall(function() espConn:Disconnect() end)
 	pcall(function()
 		if orbConnection then orbConnection:Disconnect() end
 	end)
