@@ -194,11 +194,12 @@ local RawConfig = {
 		["rbxassetid://79563637573277"] = { DisplayName = "2ndM1" },
 		["rbxassetid://118070233153900"] = { DisplayName = "3rdM1" },
 		["rbxassetid://77710266587706"] = { DisplayName = "4thM1" },
-		["rbxassetid://114364673509520"] = { DisplayName = "M2" },
+		["rbxassetid://114364673509520"] = { DisplayName = "M2", ReactionTime = 0.3 },
 		["rbxassetid://132840225082238"] = { DisplayName = "1stM1" },
 		["rbxassetid://88761422474765"] = { DisplayName = "2ndM1" },
 		["rbxassetid://98462236639320"] = { DisplayName = "3rdM1" },
 		["rbxassetid://122451562066756"] = { DisplayName = "4thM1" },
+		M1Time = 0.15,
 	},
 	HakariOtherAnims = {
 		["rbxassetid://126612786608030"] = { DisplayName = "1stM1" },
@@ -468,6 +469,8 @@ end
 -- ==========================================
 
 local AutoParryEnabled = false
+local DebugAnimsEnabled = false
+local DebugPrintedAnims = {}
 
 local function Dodge()
 	KeyHeld = false
@@ -648,8 +651,18 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 	if not anim.AnimationId then
 		return
 	end
-	local attackConfig = GameConfig[tostring(anim.AnimationId)]
+	local animIdStr = tostring(anim.AnimationId)
+	local attackConfig = GameConfig[animIdStr]
 	if not attackConfig then
+		if DebugAnimsEnabled then
+			local charName = character and character.Name or "?"
+			local key = charName .. animIdStr
+			if not DebugPrintedAnims[key] then
+				DebugPrintedAnims[key] = true
+				print(string.format("[AutoParry DEBUG] Unknown anim on %s: %s (Name: %s, TimePos: %.2f)",
+					charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0))
+			end
+		end
 		return
 	end
 
@@ -1253,6 +1266,15 @@ for styleName, animations in pairs(groupedStyles) do
 	end
 	counter = counter + 1
 end
+
+local debugSec = styleSub:Section("Debug", "Left")
+debugSec:Toggle("log unknown anims", false, function(v)
+	DebugAnimsEnabled = v
+	DebugPrintedAnims = {}
+end)
+debugSec:Button("clear log cache", function()
+	DebugPrintedAnims = {}
+end)
 
 -- ==========================================
 -- Input
