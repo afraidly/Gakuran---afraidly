@@ -15,6 +15,10 @@ if not Lib or not Win then
 	return
 end
 
+if _G.GakuranParryCleanup then
+	pcall(_G.GakuranParryCleanup)
+end
+
 print("[AutoParry] Module loaded")
 
 -- ==========================================
@@ -372,9 +376,8 @@ end
 
 local function GetLocalHRP()
 	local char = LocalPlayer.Character
-	return char and safeGet(function()
-		return char:FindFirstChild("HumanoidRootPart")
-	end)
+	if not char then return nil end
+	return char:FindFirstChild("HumanoidRootPart")
 end
 
 local mouse = nil
@@ -384,13 +387,13 @@ end)
 
 local function IsCombatCharacter(model)
 	if not model then return false end
-	local class = safeGet(function() return model.ClassName end)
+	local class = model.ClassName
 	if class ~= "Model" then return false end
-	local hum = safeGet(function() return model:FindFirstChildWhichIsA("Humanoid") end)
+	local hum = model:FindFirstChildWhichIsA("Humanoid")
 	if not hum then return false end
-	local hrp = safeGet(function() return model:FindFirstChild("HumanoidRootPart") end)
+	local hrp = model:FindFirstChild("HumanoidRootPart")
 	if not hrp then return false end
-	local maxHP = safeGet(function() return hum.MaxHealth end) or 0
+	local maxHP = hum.MaxHealth or 0
 	if maxHP < 50 then return false end
 	return true
 end
@@ -420,15 +423,12 @@ local function GetAllCharactersInFolder()
 	if not SelectedFolder then
 		return {}
 	end
-	local folderInst = safeGet(function()
-		return Workspace:FindFirstChild(SelectedFolder)
-	end)
+	local folderInst = Workspace:FindFirstChild(SelectedFolder)
 	if not folderInst then
 		return {}
 	end
-	local localAddr = safeGet(function()
-		return LocalPlayer.Character and LocalPlayer.Character.Address
-	end)
+	local localChar = LocalPlayer.Character
+	local localAddr = localChar and localChar.Address
 	local chars = {}
 	for _, child in ipairs(folderInst:GetChildren()) do
 		if IsCombatCharacter(child) then
@@ -511,7 +511,7 @@ end
 -- ==========================================
 
 local PingCompensate = true
-local HeightToggle = true
+local HeightToggle = false
 
 local function CalculateParryTiming(attackConfig, startTime, targetChar)
 	local optimalReactionTime = attackConfig.ReactionTime or DefaultReactionTime
@@ -692,12 +692,9 @@ end
 
 local function EvaluateParryTriggers()
 	local localChar = LocalPlayer.Character
-	local localRoot = localChar and safeGet(function()
-		return localChar:FindFirstChild("HumanoidRootPart")
-	end)
-	if not localRoot then
-		return
-	end
+	if not localChar then return end
+	local localRoot = localChar:FindFirstChild("HumanoidRootPart")
+	if not localRoot then return end
 
 	LocalTracker:Update(localChar)
 
@@ -706,9 +703,7 @@ local function EvaluateParryTriggers()
 		if not character or not character.Parent then
 			continue
 		end
-		local targetRoot = safeGet(function()
-			return character:FindFirstChild("HumanoidRootPart")
-		end)
+		local targetRoot = character:FindFirstChild("HumanoidRootPart")
 		if not targetRoot then
 			continue
 		end
@@ -806,7 +801,7 @@ local function onLocalAnimationAdded(anim)
 	end
 end
 
-LocalTracker.AnimationAdded:Connect(onLocalAnimationAdded)
+local animAddedConn = LocalTracker.AnimationAdded:Connect(onLocalAnimationAdded)
 
 local function ParryTask()
 	local now = os.clock()
@@ -864,8 +859,8 @@ local function UpdateTargetCharacters(charactersList)
 	TargetCharacters = {}
 	for _, character in ipairs(charactersList) do
 		table.insert(TargetCharacters, character)
-		local hrp = safeGet(function() return character:FindFirstChild("HumanoidRootPart") end)
-		if character and hrp and ESP_Utility then
+		local hrp = character:FindFirstChild("HumanoidRootPart")
+		if hrp and ESP_Utility then
 			pcall(function()
 				local tracker = ESP_Utility.NewTracker(hrp, character.Name, EspSettings.BoxColor)
 				if tracker then
@@ -886,10 +881,9 @@ local UseMouseTarget = true
 
 local function GetMouseWorldPos()
 	if not mouse then return nil end
-	local hit = safeGet(function() return mouse.Hit end)
-	if not hit then return nil end
-	local pos = safeGet(function() return hit.Position end)
-	return pos
+	local ok, hit = pcall(function() return mouse.Hit end)
+	if not ok or not hit then return nil end
+	return hit.Position
 end
 
 local function IsAlreadyTargeted(char)
@@ -912,16 +906,12 @@ local function CycleEvent()
 	end
 
 	local localChar = LocalPlayer.Character
-	local localRoot = localChar and safeGet(function()
-		return localChar:FindFirstChild("HumanoidRootPart")
-	end)
+	local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
 	if not localRoot then return end
 
 	local valid = {}
 	for _, char in ipairs(allCharacters) do
-		local targetRoot = safeGet(function()
-			return char:FindFirstChild("HumanoidRootPart")
-		end)
+		local targetRoot = char:FindFirstChild("HumanoidRootPart")
 		if targetRoot then
 			local dist = (localRoot.Position - targetRoot.Position).Magnitude
 			if dist <= MaxCycleRange then
@@ -973,13 +963,11 @@ local function CycleEvent()
 			local bestChar = nil
 			local bestDist = math.huge
 			for _, v in ipairs(valid) do
-				local charPos = safeGet(function() return v.Root.Position end)
-				if charPos then
-					local md = (charPos - mouseWorldPos).Magnitude
-					if md < bestDist then
-						bestDist = md
-						bestChar = v.Character
-					end
+				local charPos = v.Root.Position
+				local md = (charPos - mouseWorldPos).Magnitude
+				if md < bestDist then
+					bestDist = md
+					bestChar = v.Character
 				end
 			end
 			if bestChar then
@@ -1033,19 +1021,12 @@ local function StartOrbListener()
 		lastOrbCheck = now
 
 		local char = LocalPlayer.Character
-		local hrp = char and safeGet(function()
-			return char:FindFirstChild("HumanoidRootPart")
-		end)
-		if not hrp then
-			return
-		end
+		if not char then return end
+		local hrp = char:FindFirstChild("HumanoidRootPart")
+		if not hrp then return end
 		local myPos = hrp.Position
-		local thrown = safeGet(function()
-			return Workspace:FindFirstChild("Thrown")
-		end)
-		if not thrown then
-			return
-		end
+		local thrown = Workspace:FindFirstChild("Thrown")
+		if not thrown then return end
 		for _, v in ipairs(thrown:GetChildren()) do
 			if (v.name == "ArdourBall2" or v.name == "ArdourBall") and v:IsA("BasePart") then
 				local dist = (myPos - v.Position).Magnitude
@@ -1116,7 +1097,7 @@ apCondSec:Toggle("you facing target", true, function(v)
 	YouFacingTarget = v
 end)
 
-apCondSec:Toggle("height multiplier", true, function(v)
+apCondSec:Toggle("height multiplier", false, function(v)
 	HeightToggle = v
 end)
 
@@ -1279,11 +1260,9 @@ end
 
 local lastXCycle = 0
 
-UIS.InputBegan:Connect(function(input, gameProcessed)
-	local rhythmUI = safeGet(function()
-		return LocalPlayer.PlayerGui:FindFirstChild("RhythmServiceUI")
-	end)
-	if rhythmUI then
+local inputBeganConn = UIS.InputBegan:Connect(function(input, gameProcessed)
+	local pg = LocalPlayer.PlayerGui
+	if pg and pg:FindFirstChild("RhythmServiceUI") then
 		return
 	end
 
@@ -1303,12 +1282,8 @@ end)
 local lastCycleCheck = 0
 
 local parryConn = RS.Heartbeat:Connect(function()
+	if not AutoParryEnabled and not iskeypressed(0x58) then return end
 	if not isrbxactive() then return end
-
-	local rhythmUI = safeGet(function()
-		return LocalPlayer.PlayerGui:FindFirstChild("RhythmServiceUI")
-	end)
-	if rhythmUI then return end
 
 	if iskeypressed(0x58) then
 		local now = os.clock()
@@ -1319,6 +1294,9 @@ local parryConn = RS.Heartbeat:Connect(function()
 	end
 
 	if not AutoParryEnabled then return end
+
+	local pg = LocalPlayer.PlayerGui
+	if pg and pg:FindFirstChild("RhythmServiceUI") then return end
 
 	EvaluateParryTriggers()
 	ParryTask()
@@ -1346,6 +1324,15 @@ _G.GakuranParryCleanup = function()
 	pcall(function() parryConn:Disconnect() end)
 	pcall(function()
 		if orbConnection then orbConnection:Disconnect() end
+	end)
+	pcall(function()
+		if animAddedConn then animAddedConn:Disconnect() end
+	end)
+	pcall(function()
+		if inputBeganConn then inputBeganConn:Disconnect() end
+	end)
+	pcall(function()
+		if _G.GakranEspCleanup then _G.GakranEspCleanup() end
 	end)
 	if FovEnabled then
 		pcall(function()
