@@ -908,22 +908,24 @@ local function CycleEvent()
 
 	if AutoTargetNearest then
 		table.sort(valid, function(a, b) return a.Distance < b.Distance end)
-		local nearest = valid[1].Character
 		if MultiTarget then
 			local finalTargets = {}
 			for i = 1, math.min(3, #valid) do
 				table.insert(finalTargets, valid[i].Character)
 			end
-			local same = #finalTargets == #TargetCharacters
-			if same then
-				for i = 1, #finalTargets do
-					if finalTargets[i] ~= TargetCharacters[i] then same = false break end
+			local sameSet = #finalTargets == #TargetCharacters
+			if sameSet then
+				local existing = {}
+				for _, c in ipairs(TargetCharacters) do existing[c] = true end
+				for _, c in ipairs(finalTargets) do
+					if not existing[c] then sameSet = false break end
 				end
 			end
-			if not same then
+			if not sameSet then
 				UpdateTargetCharacters(finalTargets)
 			end
 		else
+			local nearest = valid[1].Character
 			if IsAlreadyTargeted(nearest) then return end
 			UpdateTargetCharacters({ nearest })
 		end
