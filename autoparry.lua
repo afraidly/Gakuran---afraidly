@@ -201,8 +201,6 @@ local RawConfig = {
 		["rbxassetid://115234849770695"] = { DisplayName = "2ndM1", ReactionTime = 0.12 },
 		["rbxassetid://85554794950365"] = { DisplayName = "3rdM1", ReactionTime = 0.12 },
 		["rbxassetid://73777821288331"] = { DisplayName = "4thM1", ReactionTime = 0.07 },
-		["rbxassetid://86740216609625"] = { DisplayName = "M2", ReactionTime = 0.1 },
-		["rbxassetid://91433537350586"] = { DisplayName = "M2", ReactionTime = 0.1 },
 		M1Time = 0.12,
 	},
 	HakariOtherAnims = {
