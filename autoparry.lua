@@ -363,12 +363,39 @@ local function GetLocalHRP()
 	end)
 end
 
+local mouse = nil
+pcall(function()
+	mouse = LocalPlayer:GetMouse()
+end)
+
+local function IsCombatCharacter(model)
+	if not model then return false end
+	local class = safeGet(function() return model.ClassName end)
+	if class ~= "Model" then return false end
+	local hum = safeGet(function() return model:FindFirstChildWhichIsA("Humanoid") end)
+	if not hum then return false end
+	local hrp = safeGet(function() return model:FindFirstChild("HumanoidRootPart") end)
+	if not hrp then return false end
+	local maxHP = safeGet(function() return hum.MaxHealth end) or 0
+	if maxHP < 50 then return false end
+	return true
+end
+
 local function GetAllFoldersInWorkspace()
 	local folders = {}
 	pcall(function()
 		for _, f in ipairs(Workspace:GetChildren()) do
 			if f.ClassName == "Folder" then
-				table.insert(folders, f.Name)
+				local hasCombatChar = false
+				for _, child in ipairs(f:GetChildren()) do
+					if IsCombatCharacter(child) then
+						hasCombatChar = true
+						break
+					end
+				end
+				if hasCombatChar then
+					table.insert(folders, f.Name)
+				end
 			end
 		end
 	end)
@@ -385,10 +412,13 @@ local function GetAllCharactersInFolder()
 	if not folderInst then
 		return {}
 	end
+	local localAddr = safeGet(function()
+		return LocalPlayer.Character and LocalPlayer.Character.Address
+	end)
 	local chars = {}
 	for _, child in ipairs(folderInst:GetChildren()) do
-		if child.ClassName == "Model" and child:FindFirstChildWhichIsA("Humanoid") then
-			if not IncludeLocalCharacter and child.Address == LocalPlayer.Character.Address then
+		if IsCombatCharacter(child) then
+			if not IncludeLocalCharacter and child.Address == localAddr then
 				continue
 			end
 			table.insert(chars, child)
@@ -817,12 +847,32 @@ end
 
 local AutoTargetNearest = false
 local MultiTarget = true
+local UseMouseTarget = true
+
+local function GetMouseWorldPos()
+	if not mouse then return nil end
+	local hit = safeGet(function() return mouse.Hit end)
+	if not hit then return nil end
+	local pos = safeGet(function() return hit.Position end)
+	return pos
+end
+
+local function IsAlreadyTargeted(char)
+	for _, existing in ipairs(TargetCharacters) do
+		if existing == char then return true end
+	end
+	return false
+end
 
 local function CycleEvent()
 	local allCharacters = GetAllCharactersInFolder()
 	if not SelectedFolder or #allCharacters == 0 then
-		UpdateTargetCharacters({})
-		pcall(function() Lib:Notify("Cycle", "No targets found", 2, "warning") end)
+		if #TargetCharacters > 0 then
+			UpdateTargetCharacters({})
+		end
+		if not AutoTargetNearest then
+			pcall(function() Lib:Notify("Cycle", "No targets found", 2, "warning") end)
+		end
 		return
 	end
 
@@ -830,9 +880,7 @@ local function CycleEvent()
 	local localRoot = localChar and safeGet(function()
 		return localChar:FindFirstChild("HumanoidRootPart")
 	end)
-	if not localRoot then
-		return
-	end
+	if not localRoot then return end
 
 	local valid = {}
 	for _, char in ipairs(allCharacters) do
@@ -842,23 +890,77 @@ local function CycleEvent()
 		if targetRoot then
 			local dist = (localRoot.Position - targetRoot.Position).Magnitude
 			if dist <= MaxCycleRange then
-				table.insert(valid, { Character = char, Distance = dist })
+				table.insert(valid, { Character = char, Distance = dist, Root = targetRoot })
 			end
 		end
 	end
 
 	if #valid == 0 then
-		CurrentIndex = 1
-		UpdateTargetCharacters({})
+		if #TargetCharacters > 0 then
+			CurrentIndex = 1
+			UpdateTargetCharacters({})
+		end
 		if not AutoTargetNearest then
 			pcall(function() Lib:Notify("Cycle", "No targets in range [" .. MaxCycleRange .. " studs]", 2, "warning") end)
 		end
 		return
 	end
 
-	table.sort(valid, function(a, b)
-		return a.Distance < b.Distance
-	end)
+	if AutoTargetNearest then
+		table.sort(valid, function(a, b) return a.Distance < b.Distance end)
+		local nearest = valid[1].Character
+		if MultiTarget then
+			local finalTargets = {}
+			for i = 1, math.min(3, #valid) do
+				table.insert(finalTargets, valid[i].Character)
+			end
+			local same = #finalTargets == #TargetCharacters
+			if same then
+				for i = 1, #finalTargets do
+					if finalTargets[i] ~= TargetCharacters[i] then same = false break end
+				end
+			end
+			if not same then
+				UpdateTargetCharacters(finalTargets)
+			end
+		else
+			if IsAlreadyTargeted(nearest) then return end
+			UpdateTargetCharacters({ nearest })
+		end
+		return
+	end
+
+	if UseMouseTarget and not MultiTarget then
+		local mouseWorldPos = GetMouseWorldPos()
+		if mouseWorldPos then
+			local bestChar = nil
+			local bestDist = math.huge
+			for _, v in ipairs(valid) do
+				local charPos = safeGet(function() return v.Root.Position end)
+				if charPos then
+					local md = (charPos - mouseWorldPos).Magnitude
+					if md < bestDist then
+						bestDist = md
+						bestChar = v.Character
+					end
+				end
+			end
+			if bestChar then
+				if IsAlreadyTargeted(bestChar) then
+					for i, v in ipairs(valid) do
+						if v.Character == bestChar then CurrentIndex = i break end
+					end
+					local nextIdx = (CurrentIndex % #valid) + 1
+					bestChar = valid[nextIdx].Character
+				end
+				UpdateTargetCharacters({ bestChar })
+				pcall(function() Lib:Notify("Cycle", "Locked: " .. bestChar.Name, 2, "info") end)
+				return
+			end
+		end
+	end
+
+	table.sort(valid, function(a, b) return a.Distance < b.Distance end)
 
 	if MultiTarget then
 		local finalTargets = {}
@@ -869,8 +971,7 @@ local function CycleEvent()
 		pcall(function() Lib:Notify("Cycle", string.format("%d targets locked", #finalTargets), 2, "success") end)
 	else
 		CurrentIndex = (CurrentIndex % #valid) + 1
-		local targetIndex = AutoTargetNearest and 1 or CurrentIndex
-		local selected = valid[targetIndex].Character
+		local selected = valid[CurrentIndex].Character
 		UpdateTargetCharacters({ selected })
 		pcall(function() Lib:Notify("Cycle", "Locked: " .. selected.Name, 2, "info") end)
 	end
@@ -929,7 +1030,7 @@ local apCondSec = apParrySub:Section("Conditions", "Left")
 local apFolSec = apParrySub:Section("Folders", "Right")
 local apLogSec = apParrySub:Section("Logging", "Right")
 
-apSetSec:Label("Press X to cycle targets. F = manual parry.")
+apSetSec:Label("X = target who you're looking at | F = manual parry")
 
 apSetSec:Toggle("auto parry", false, function(v)
 	AutoParryEnabled = v
@@ -958,6 +1059,10 @@ apSetSec:Toggle("auto target nearest", false, function(v)
 	if v then
 		CycleEvent()
 	end
+end)
+
+apSetSec:Toggle("mouse targeting", true, function(v)
+	UseMouseTarget = v
 end)
 
 apCondSec:Toggle("target facing you", false, function(v)
