@@ -343,7 +343,7 @@ local EspSettings = {
 	NameColor = Color3.fromRGB(255, 255, 255),
 	DistanceColor = Color3.fromRGB(180, 180, 180),
 	HealthColor = Color3.fromRGB(100, 255, 100),
-	TextSize = 13,
+	TextSize = 12,
 }
 _G.GakuranEspSettings = EspSettings
 
@@ -538,14 +538,32 @@ local function CheckDirection(character, localChar, localRoot, targetRoot, attac
 	if character.Address == localChar.Address then
 		return true
 	end
-	local direction = (targetRoot.Position - localRoot.Position).Unit
+	local offset = targetRoot.Position - localRoot.Position
+	local distance = offset.Magnitude
+	if distance < 0.1 then return true end
 	local isHeavy = attackConfig.DisplayName == "M2" or attackConfig.DisplayName == "Heavy"
 	if not isHeavy then
-		if TargetFacingYou and targetRoot.CFrame.LookVector:Dot(-direction) < 0.1 then
-			return false
+		local localForward = localRoot.CFrame.LookVector
+		local targetForward = targetRoot.CFrame.LookVector
+		local dirUnit = offset / distance
+		if YouFacingTarget then
+			local forwardDist = localForward:Dot(dirUnit)
+			local rightVector = Vector3.new(localForward.Z, 0, -localForward.X).Unit
+			local sideDist = math.abs(rightVector:Dot(dirUnit))
+			local maxSide = math.clamp(distance * 0.6, 3, 12)
+			if forwardDist < 0 or sideDist > maxSide then
+				return false
+			end
 		end
-		if YouFacingTarget and localRoot.CFrame.LookVector:Dot(direction) < 0.1 then
-			return false
+		if TargetFacingYou then
+			local targetDir = -dirUnit
+			local tForwardDist = targetForward:Dot(targetDir)
+			local tRightVector = Vector3.new(targetForward.Z, 0, -targetForward.X).Unit
+			local tSideDist = math.abs(tRightVector:Dot(targetDir))
+			local tMaxSide = math.clamp(distance * 0.6, 3, 12)
+			if tForwardDist < 0 or tSideDist > tMaxSide then
+				return false
+			end
 		end
 	end
 	return true
@@ -1163,7 +1181,7 @@ espTextSec:Toggle("show health bar", false, function(v)
 	EspSettings.ShowHealth = v
 end)
 
-espTextSec:Slider("text size", 13, 1, 8, 24, "", function(v)
+espTextSec:Slider("text size", 12, 1, 8, 24, "", function(v)
 	EspSettings.TextSize = v
 end)
 
