@@ -79,6 +79,8 @@ local IgnoreIds = {
 	99309341097380,
 	83600639547203,
 	79688890917324,
+	71385851727754,
+	108803307415813,
 }
 
 local ParriedAnimation = {
@@ -198,6 +200,9 @@ local RawConfig = {
 		["rbxassetid://115234849770695"] = { DisplayName = "2ndM1" },
 		["rbxassetid://85554794950365"] = { DisplayName = "3rdM1" },
 		["rbxassetid://73777821288331"] = { DisplayName = "4thM1" },
+		["rbxassetid://86740216609625"] = { DisplayName = "M2", ReactionTime = 0.3 },
+		["rbxassetid://91433537350586"] = { DisplayName = "M2", ReactionTime = 0.3 },
+		["rbxassetid://127159892882325"] = { DisplayName = "M2", ReactionTime = 0.3 },
 		M1Time = 0.15,
 	},
 	HakariOtherAnims = {
@@ -491,6 +496,9 @@ local function BlockStart(startTime, holdFor)
 	end
 	local hold = holdFor or BlockHoldTime
 	ReleaseDeadline = startTime + hold
+	if KeyHeld and AutoParryEnabled then
+		keyrelease(PARRY_KEY)
+	end
 	KeyHeld = true
 	if AutoParryEnabled then
 		keypress(PARRY_KEY)
