@@ -75,7 +75,7 @@ local IgnoreIds = {
 	93184693099565,
 	120399899079666,
 	99958962160522,
-	79688890917324,
+	134968158802175,
 	99309341097380,
 	83600639547203,
 }
@@ -193,11 +193,11 @@ local RawConfig = {
 		["rbxassetid://121315597867666"] = { DisplayName = "3rdM1", ReactionTime = 0.16 },
 	},
 	StrikerAnims = {
-		["rbxassetid://134968158802175"] = { DisplayName = "1stM1" },
-		["rbxassetid://116642061934550"] = { DisplayName = "2ndM1" },
-		["rbxassetid://115234849770695"] = { DisplayName = "3rdM1" },
-		["rbxassetid://85554794950365"] = { DisplayName = "4thM1" },
-		["rbxassetid://73777821288331"] = { DisplayName = "M2", ReactionTime = 0.3 },
+		["rbxassetid://116642061934550"] = { DisplayName = "1stM1" },
+		["rbxassetid://115234849770695"] = { DisplayName = "2ndM1" },
+		["rbxassetid://85554794950365"] = { DisplayName = "3rdM1" },
+		["rbxassetid://73777821288331"] = { DisplayName = "4thM1" },
+		["rbxassetid://79688890917324"] = { DisplayName = "M2", ReactionTime = 0.3 },
 		M1Time = 0.15,
 	},
 	HakariOtherAnims = {
@@ -1088,7 +1088,9 @@ local apToggle = apSetSec:Toggle("auto parry", false, function(v)
 	end
 end)
 
-apToggle:AddKeybind(nil, "Toggle")
+apToggle:AddKeybind(nil, "Toggle", function(state)
+	apToggle:Set(state)
+end)
 
 apSetSec:Toggle("auto dodge", true, function(v)
 	AutoDodgeEnabled = v
