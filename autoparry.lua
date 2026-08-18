@@ -710,6 +710,13 @@ local function EvaluateParryTriggers()
 
 	LocalTracker:Update(localChar)
 
+	local localAnimIds = {}
+	for _, anim in ipairs(LocalTracker:Update(localChar)) do
+		if anim.AnimationId then
+			localAnimIds[tostring(anim.AnimationId)] = true
+		end
+	end
+
 	local currentActiveIds = {}
 	for _, character in ipairs(TargetCharacters) do
 		if not character or not character.Parent then
@@ -733,7 +740,9 @@ local function EvaluateParryTriggers()
 		local activeAnims = GetActiveAnimsDict(character)
 		for animKey, anim in pairs(activeAnims) do
 			currentActiveIds[animKey] = true
-			EvaluateAnimation(anim, character, localChar, localRoot, targetRoot, currentActiveIds)
+			if not localAnimIds[tostring(anim.AnimationId)] then
+				EvaluateAnimation(anim, character, localChar, localRoot, targetRoot, currentActiveIds)
+			end
 		end
 	end
 
@@ -1068,7 +1077,7 @@ local apLogSec = apParrySub:Section("Logging", "Right")
 
 apSetSec:Label("X = target who you're looking at | F = manual parry")
 
-apSetSec:Toggle("auto parry", false, function(v)
+local apToggle = apSetSec:Toggle("auto parry", false, function(v)
 	AutoParryEnabled = v
 	if v then
 		CycleEvent()
@@ -1078,6 +1087,8 @@ apSetSec:Toggle("auto parry", false, function(v)
 		UpdateTargetCharacters({})
 	end
 end)
+
+apToggle:AddKeybind(nil, "Toggle")
 
 apSetSec:Toggle("auto dodge", true, function(v)
 	AutoDodgeEnabled = v
