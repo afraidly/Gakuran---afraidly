@@ -75,6 +75,9 @@ local IgnoreIds = {
 	93184693099565,
 	120399899079666,
 	99958962160522,
+	79688890917324,
+	99309341097380,
+	83600639547203,
 }
 
 local ParriedAnimation = {
@@ -190,15 +193,11 @@ local RawConfig = {
 		["rbxassetid://121315597867666"] = { DisplayName = "3rdM1", ReactionTime = 0.16 },
 	},
 	StrikerAnims = {
-		["rbxassetid://127909081017342"] = { DisplayName = "1stM1" },
-		["rbxassetid://79563637573277"] = { DisplayName = "2ndM1" },
-		["rbxassetid://118070233153900"] = { DisplayName = "3rdM1" },
-		["rbxassetid://77710266587706"] = { DisplayName = "4thM1" },
-		["rbxassetid://114364673509520"] = { DisplayName = "M2", ReactionTime = 0.3 },
-		["rbxassetid://132840225082238"] = { DisplayName = "1stM1" },
-		["rbxassetid://88761422474765"] = { DisplayName = "2ndM1" },
-		["rbxassetid://98462236639320"] = { DisplayName = "3rdM1" },
-		["rbxassetid://122451562066756"] = { DisplayName = "4thM1" },
+		["rbxassetid://134968158802175"] = { DisplayName = "1stM1" },
+		["rbxassetid://116642061934550"] = { DisplayName = "2ndM1" },
+		["rbxassetid://115234849770695"] = { DisplayName = "3rdM1" },
+		["rbxassetid://85554794950365"] = { DisplayName = "4thM1" },
+		["rbxassetid://73777821288331"] = { DisplayName = "M2", ReactionTime = 0.3 },
 		M1Time = 0.15,
 	},
 	HakariOtherAnims = {
