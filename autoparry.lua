@@ -470,6 +470,8 @@ end
 local AutoParryEnabled = false
 local DebugAnimsEnabled = false
 local DebugPrintedAnims = {}
+local LogAllAnims = false
+local LoggedAnimIds = {}
 
 local function Dodge()
 	KeyHeld = false
@@ -619,6 +621,10 @@ end
 local function ExecuteParry(reg, attackConfig)
 	local now = os.clock()
 	if (now - reg.LastExecuteTime) < EXECUTE_DEBOUNCE then
+		if LogAllAnims then
+			print(string.format("[AutoParry ACTION] %s | DEBOUNCE_SKIP | %.3fs since last",
+				attackConfig.DisplayName, now - reg.LastExecuteTime))
+		end
 		return
 	end
 	reg.LastExecuteTime = now
@@ -628,14 +634,26 @@ local function ExecuteParry(reg, attackConfig)
 	if isHeavy and AutoDodgeEnabled then
 		if AutoParryEnabled then
 			Dodge()
+			if LogAllAnims then
+				print(string.format("[AutoParry ACTION] %s | DODGE | %s",
+					attackConfig.DisplayName, attackConfig.Style))
+			end
 		end
 	else
 		if LastPendingRegData ~= reg then
 			LastPendingRegData = reg
 			BlockStart(reg.BlockStart)
+			if LogAllAnims then
+				print(string.format("[AutoParry ACTION] %s | BLOCK | %s",
+					attackConfig.DisplayName, attackConfig.Style))
+			end
 		elseif reg.DidALoop then
 			reg.DidALoop = false
 			BlockStart(reg.BlockStart)
+			if LogAllAnims then
+				print(string.format("[AutoParry ACTION] %s | BLOCK (loop) | %s",
+					attackConfig.DisplayName, attackConfig.Style))
+			end
 		end
 	end
 end
@@ -645,6 +663,9 @@ local function BoxingM2Parry(reg)
 		return
 	end
 	reg.Processed = true
+	if LogAllAnims then
+		print("[AutoParry ACTION] BoxingM2 | CUSTOM PARRY (block + dodge)")
+	end
 	schedulerDelay(0.4, function()
 		BlockStart(os.clock(), 0.5)
 		schedulerDelay(0.3, function()
@@ -669,7 +690,27 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 					charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0))
 			end
 		end
+		if LogAllAnims then
+			local charName = character and character.Name or "?"
+			local key = charName .. animIdStr
+			if not LoggedAnimIds[key] then
+				LoggedAnimIds[key] = true
+				print(string.format("[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | UNKNOWN",
+					charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0))
+			end
+		end
 		return
+	end
+
+	if LogAllAnims then
+		local charName = character and character.Name or "?"
+		local key = charName .. animIdStr
+		if not LoggedAnimIds[key] then
+			LoggedAnimIds[key] = true
+			print(string.format("[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | %s | RT: %.2fs",
+				charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0,
+				attackConfig.Style, attackConfig.ReactionTime or DefaultReactionTime))
+		end
 	end
 
 	local animKey = anim.Address or anim
@@ -678,10 +719,19 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 	local now = os.clock()
 	local reg = UpdateAnimationRegistry(animKey, anim, now, anim.TimePosition or 0, attackConfig, character)
 	if reg.Processed then
+		if LogAllAnims then
+			print(string.format("[AutoParry ACTION] %s | SKIP (already processed) | %s",
+				attackConfig.DisplayName, attackConfig.Style))
+		end
 		return
 	end
 
-	if (targetRoot.Position - localRoot.Position).Magnitude > AutoParryRange then
+	local dist = (targetRoot.Position - localRoot.Position).Magnitude
+	if dist > AutoParryRange then
+		if LogAllAnims then
+			print(string.format("[AutoParry ACTION] %s | SKIP (out of range %.1f > %d) | %s",
+				attackConfig.DisplayName, dist, AutoParryRange, attackConfig.Style))
+		end
 		return
 	end
 
@@ -695,17 +745,30 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 	end
 
 	if not CheckDirection(character, localChar, localRoot, targetRoot, attackConfig) then
+		if LogAllAnims then
+			print(string.format("[AutoParry ACTION] %s | SKIP (wrong direction) | %s",
+				attackConfig.DisplayName, attackConfig.Style))
+		end
 		return
 	end
 
 	if reg.RandomNum > ProbabilityToParry then
 		reg.Processed = true
+		if LogAllAnims then
+			print(string.format("[AutoParry ACTION] %s | SKIP (probability %d > %d) | %s",
+				attackConfig.DisplayName, reg.RandomNum, ProbabilityToParry, attackConfig.Style))
+		end
 		return
 	end
 
 	local blockExpireTimer = reg.BlockExpire - now
 	if now >= reg.BlockStart and blockExpireTimer >= 0 then
 		ExecuteParry(reg, attackConfig)
+	else
+		if LogAllAnims then
+			print(string.format("[AutoParry ACTION] %s | SKIP (not in block window: now=%.3f start=%.3f expire=%.3f) | %s",
+				attackConfig.DisplayName, now, reg.BlockStart, reg.BlockExpire, attackConfig.Style))
+		end
 	end
 end
 
@@ -747,8 +810,18 @@ local function EvaluateParryTriggers()
 		local activeAnims = GetActiveAnimsDict(character)
 		for animKey, anim in pairs(activeAnims) do
 			currentActiveIds[animKey] = true
-			if not localAnimIds[tostring(anim.AnimationId)] then
+			local animIdStr = tostring(anim.AnimationId)
+			if not localAnimIds[animIdStr] then
 				EvaluateAnimation(anim, character, localChar, localRoot, targetRoot, currentActiveIds)
+			else
+				if LogAllAnims then
+					local key = character.Name .. animIdStr
+					if not LoggedAnimIds[key] then
+						LoggedAnimIds[key] = true
+						print(string.format("[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | SHARED (on local too)",
+							character.Name, animIdStr, tostring(anim.Name), anim.TimePosition or 0))
+					end
+				end
 			end
 		end
 	end
@@ -1291,8 +1364,13 @@ debugSec:Toggle("log unknown anims", false, function(v)
 	DebugAnimsEnabled = v
 	DebugPrintedAnims = {}
 end)
+debugSec:Toggle("log all target anims", false, function(v)
+	LogAllAnims = v
+	LoggedAnimIds = {}
+end)
 debugSec:Button("clear log cache", function()
 	DebugPrintedAnims = {}
+	LoggedAnimIds = {}
 end)
 
 -- ==========================================
