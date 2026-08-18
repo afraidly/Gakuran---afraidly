@@ -334,7 +334,7 @@ local EspTrackers = {}
 local CurrentIndex = 1
 
 local EspSettings = {
-	BoxMode = "bounding",
+	BoxMode = "static",
 	ShowName = true,
 	ShowDistance = true,
 	ShowHealth = false,
@@ -1146,12 +1146,6 @@ local espSub = combatTab:Sub("ESP", "eye")
 local espBoxSec = espSub:Section("Box", "Left")
 local espTextSec = espSub:Section("Text", "Left")
 local espColSec = espSub:Section("Colors", "Right")
-
-espBoxSec:Dropdown("box mode", {"bounding"}, {"bounding", "static"}, false, function(list)
-	if list and list[1] then
-		EspSettings.BoxMode = list[1]
-	end
-end)
 
 espBoxSec:Slider("box thickness", 1, 1, 1, 5, "", function(v)
 	EspSettings.BoxThickness = v
