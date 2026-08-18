@@ -1,6 +1,5 @@
 -- Gakuran Auto-Parry Module (separate from autoplay)
 -- Based on the original gakran.lua by artxficial
--- Loaded by autoplay.lua via loadstring
 
 local RS = game:GetService("RunService")
 local Players = game:GetService("Players")
