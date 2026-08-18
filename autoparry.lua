@@ -76,12 +76,13 @@ local IgnoreIds = {
 	120399899079666,
 	99958962160522,
 	134968158802175,
-	99309341097380,
 	83600639547203,
 	79688890917324,
 	71385851727754,
 	108803307415813,
 	127159892882325,
+	86740216609625,
+	91433537350586,
 }
 
 local ParriedAnimation = {
@@ -201,6 +202,7 @@ local RawConfig = {
 		["rbxassetid://115234849770695"] = { DisplayName = "2ndM1", ReactionTime = 0.12 },
 		["rbxassetid://85554794950365"] = { DisplayName = "3rdM1", ReactionTime = 0.12 },
 		["rbxassetid://73777821288331"] = { DisplayName = "4thM1", ReactionTime = 0.07 },
+		["rbxassetid://99309341097380"] = { DisplayName = "M2", ReactionTime = 0.1 },
 		M1Time = 0.12,
 	},
 	HakariOtherAnims = {
