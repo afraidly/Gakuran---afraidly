@@ -201,7 +201,7 @@ local RawConfig = {
 		["rbxassetid://116642061934550"] = { DisplayName = "1stM1", ReactionTime = 0.12 },
 		["rbxassetid://115234849770695"] = { DisplayName = "2ndM1", ReactionTime = 0.12 },
 		["rbxassetid://85554794950365"] = { DisplayName = "3rdM1", ReactionTime = 0.12 },
-		["rbxassetid://73777821288331"] = { DisplayName = "4thM1", ReactionTime = 0.09 },
+		["rbxassetid://73777821288331"] = { DisplayName = "4thM1", ReactionTime = 0 },
 		["rbxassetid://99309341097380"] = { DisplayName = "M2", ReactionTime = 0.1 },
 		M1Time = 0.12,
 	},
@@ -381,7 +381,9 @@ end
 
 local function GetLocalHRP()
 	local char = LocalPlayer.Character
-	if not char then return nil end
+	if not char then
+		return nil
+	end
 	return char:FindFirstChild("HumanoidRootPart")
 end
 
@@ -391,15 +393,25 @@ pcall(function()
 end)
 
 local function IsCombatCharacter(model)
-	if not model then return false end
+	if not model then
+		return false
+	end
 	local class = model.ClassName
-	if class ~= "Model" then return false end
+	if class ~= "Model" then
+		return false
+	end
 	local hum = model:FindFirstChildWhichIsA("Humanoid")
-	if not hum then return false end
+	if not hum then
+		return false
+	end
 	local hrp = model:FindFirstChild("HumanoidRootPart")
-	if not hrp then return false end
+	if not hrp then
+		return false
+	end
 	local maxHP = hum.MaxHealth or 0
-	if maxHP < 50 then return false end
+	if maxHP < 50 then
+		return false
+	end
 	return true
 end
 
@@ -552,7 +564,9 @@ local function CheckDirection(character, localChar, localRoot, targetRoot, attac
 	end
 	local offset = targetRoot.Position - localRoot.Position
 	local distance = offset.Magnitude
-	if distance < 0.1 then return true end
+	if distance < 0.1 then
+		return true
+	end
 	local isHeavy = attackConfig.DisplayName == "M2" or attackConfig.DisplayName == "Heavy"
 	if not isHeavy then
 		local localForward = localRoot.CFrame.LookVector
@@ -630,8 +644,14 @@ local function ExecuteParry(reg, attackConfig, animIdStr)
 	local now = os.clock()
 	if (now - reg.LastExecuteTime) < EXECUTE_DEBOUNCE then
 		if LogAllAnims then
-			print(string.format("[AutoParry ACTION] %s | DEBOUNCE_SKIP | %.3fs since last | %s",
-				attackConfig.DisplayName, now - reg.LastExecuteTime, animIdStr))
+			print(
+				string.format(
+					"[AutoParry ACTION] %s | DEBOUNCE_SKIP | %.3fs since last | %s",
+					attackConfig.DisplayName,
+					now - reg.LastExecuteTime,
+					animIdStr
+				)
+			)
 		end
 		return
 	end
@@ -643,8 +663,14 @@ local function ExecuteParry(reg, attackConfig, animIdStr)
 		if AutoParryEnabled then
 			Dodge()
 			if LogAllAnims then
-				print(string.format("[AutoParry ACTION] %s | DODGE | %s | %s",
-					attackConfig.DisplayName, animIdStr, attackConfig.Style))
+				print(
+					string.format(
+						"[AutoParry ACTION] %s | DODGE | %s | %s",
+						attackConfig.DisplayName,
+						animIdStr,
+						attackConfig.Style
+					)
+				)
 			end
 		end
 	else
@@ -652,15 +678,27 @@ local function ExecuteParry(reg, attackConfig, animIdStr)
 			LastPendingRegData = reg
 			BlockStart(os.clock())
 			if LogAllAnims then
-				print(string.format("[AutoParry ACTION] %s | BLOCK | %s | %s",
-					attackConfig.DisplayName, animIdStr, attackConfig.Style))
+				print(
+					string.format(
+						"[AutoParry ACTION] %s | BLOCK | %s | %s",
+						attackConfig.DisplayName,
+						animIdStr,
+						attackConfig.Style
+					)
+				)
 			end
 		elseif reg.DidALoop then
 			reg.DidALoop = false
 			BlockStart(os.clock())
 			if LogAllAnims then
-				print(string.format("[AutoParry ACTION] %s | BLOCK (loop) | %s | %s",
-					attackConfig.DisplayName, animIdStr, attackConfig.Style))
+				print(
+					string.format(
+						"[AutoParry ACTION] %s | BLOCK (loop) | %s | %s",
+						attackConfig.DisplayName,
+						animIdStr,
+						attackConfig.Style
+					)
+				)
 			end
 		end
 	end
@@ -694,8 +732,15 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 			local key = charName .. animIdStr
 			if not DebugPrintedAnims[key] then
 				DebugPrintedAnims[key] = true
-				print(string.format("[AutoParry DEBUG] Unknown anim on %s: %s (Name: %s, TimePos: %.2f)",
-					charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0))
+				print(
+					string.format(
+						"[AutoParry DEBUG] Unknown anim on %s: %s (Name: %s, TimePos: %.2f)",
+						charName,
+						animIdStr,
+						tostring(anim.Name),
+						anim.TimePosition or 0
+					)
+				)
 			end
 		end
 		if LogAllAnims then
@@ -703,8 +748,15 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 			local key = charName .. animIdStr
 			if not LoggedAnimIds[key] then
 				LoggedAnimIds[key] = true
-				print(string.format("[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | UNKNOWN",
-					charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0))
+				print(
+					string.format(
+						"[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | UNKNOWN",
+						charName,
+						animIdStr,
+						tostring(anim.Name),
+						anim.TimePosition or 0
+					)
+				)
 			end
 		end
 		return
@@ -715,9 +767,17 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 		local key = charName .. animIdStr
 		if not LoggedAnimIds[key] then
 			LoggedAnimIds[key] = true
-			print(string.format("[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | %s | RT: %.2fs",
-				charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0,
-				attackConfig.Style, attackConfig.ReactionTime or DefaultReactionTime))
+			print(
+				string.format(
+					"[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | %s | RT: %.2fs",
+					charName,
+					animIdStr,
+					tostring(anim.Name),
+					anim.TimePosition or 0,
+					attackConfig.Style,
+					attackConfig.ReactionTime or DefaultReactionTime
+				)
+			)
 		end
 	end
 
@@ -728,8 +788,14 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 	local reg = UpdateAnimationRegistry(animKey, anim, now, anim.TimePosition or 0, attackConfig, character)
 	if reg.Processed then
 		if LogAllAnims then
-			print(string.format("[AutoParry ACTION] %s | SKIP (already processed) | %s | %s",
-				attackConfig.DisplayName, animIdStr, attackConfig.Style))
+			print(
+				string.format(
+					"[AutoParry ACTION] %s | SKIP (already processed) | %s | %s",
+					attackConfig.DisplayName,
+					animIdStr,
+					attackConfig.Style
+				)
+			)
 		end
 		return
 	end
@@ -737,8 +803,16 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 	local dist = (targetRoot.Position - localRoot.Position).Magnitude
 	if dist > AutoParryRange then
 		if LogAllAnims then
-			print(string.format("[AutoParry ACTION] %s | SKIP (out of range %.1f > %d) | %s | %s",
-				attackConfig.DisplayName, dist, AutoParryRange, animIdStr, attackConfig.Style))
+			print(
+				string.format(
+					"[AutoParry ACTION] %s | SKIP (out of range %.1f > %d) | %s | %s",
+					attackConfig.DisplayName,
+					dist,
+					AutoParryRange,
+					animIdStr,
+					attackConfig.Style
+				)
+			)
 		end
 		return
 	end
@@ -754,8 +828,14 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 
 	if not CheckDirection(character, localChar, localRoot, targetRoot, attackConfig) then
 		if LogAllAnims then
-			print(string.format("[AutoParry ACTION] %s | SKIP (wrong direction) | %s | %s",
-				attackConfig.DisplayName, animIdStr, attackConfig.Style))
+			print(
+				string.format(
+					"[AutoParry ACTION] %s | SKIP (wrong direction) | %s | %s",
+					attackConfig.DisplayName,
+					animIdStr,
+					attackConfig.Style
+				)
+			)
 		end
 		return
 	end
@@ -763,8 +843,16 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 	if reg.RandomNum > ProbabilityToParry then
 		reg.Processed = true
 		if LogAllAnims then
-			print(string.format("[AutoParry ACTION] %s | SKIP (probability %d > %d) | %s | %s",
-				attackConfig.DisplayName, reg.RandomNum, ProbabilityToParry, animIdStr, attackConfig.Style))
+			print(
+				string.format(
+					"[AutoParry ACTION] %s | SKIP (probability %d > %d) | %s | %s",
+					attackConfig.DisplayName,
+					reg.RandomNum,
+					ProbabilityToParry,
+					animIdStr,
+					attackConfig.Style
+				)
+			)
 		end
 		return
 	end
@@ -774,33 +862,56 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 		ExecuteParry(reg, attackConfig, animIdStr)
 	else
 		if LogAllAnims then
-			print(string.format("[AutoParry ACTION] %s | SKIP (not in block window: now=%.3f start=%.3f expire=%.3f) | %s | %s",
-				attackConfig.DisplayName, now, reg.BlockStart, reg.BlockExpire, animIdStr, attackConfig.Style))
+			print(
+				string.format(
+					"[AutoParry ACTION] %s | SKIP (not in block window: now=%.3f start=%.3f expire=%.3f) | %s | %s",
+					attackConfig.DisplayName,
+					now,
+					reg.BlockStart,
+					reg.BlockExpire,
+					animIdStr,
+					attackConfig.Style
+				)
+			)
 		end
 	end
 end
 
 local lastLogScan = 0
 local function LogTargetAnimations()
-	if not SelectedFolder then return end
+	if not SelectedFolder then
+		return
+	end
 	local now = os.clock()
-	if now - lastLogScan < 0.016 then return end
+	if now - lastLogScan < 0.016 then
+		return
+	end
 	lastLogScan = now
 
 	local folderInst = Workspace:FindFirstChild(SelectedFolder)
-	if not folderInst then return end
+	if not folderInst then
+		return
+	end
 
 	for _, character in ipairs(folderInst:GetChildren()) do
-		if not character or not character.Parent then continue end
-		if not IsCombatCharacter(character) then continue end
+		if not character or not character.Parent then
+			continue
+		end
+		if not IsCombatCharacter(character) then
+			continue
+		end
 
 		local tracks = Tracker:Update(character, true)
 		for _, anim in ipairs(tracks) do
-			if not anim.AnimationId then continue end
+			if not anim.AnimationId then
+				continue
+			end
 			local animIdStr = tostring(anim.AnimationId)
 			local charName = character.Name or "?"
 			local key = charName .. animIdStr
-			if LoggedAnimIds[key] then continue end
+			if LoggedAnimIds[key] then
+				continue
+			end
 			LoggedAnimIds[key] = true
 
 			local numericId = tonumber(string.match(animIdStr, "%d+"))
@@ -811,22 +922,39 @@ local function LogTargetAnimations()
 			if isIgnored then
 				tag = "IGNORED"
 			elseif attackConfig then
-				tag = string.format("%s | %s | RT: %.2fs", attackConfig.Style, attackConfig.DisplayName, attackConfig.ReactionTime or DefaultReactionTime)
+				tag = string.format(
+					"%s | %s | RT: %.2fs",
+					attackConfig.Style,
+					attackConfig.DisplayName,
+					attackConfig.ReactionTime or DefaultReactionTime
+				)
 			else
 				tag = "UNKNOWN"
 			end
 
-			print(string.format("[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | %s",
-				charName, animIdStr, tostring(anim.Name), anim.TimePosition or 0, tag))
+			print(
+				string.format(
+					"[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | %s",
+					charName,
+					animIdStr,
+					tostring(anim.Name),
+					anim.TimePosition or 0,
+					tag
+				)
+			)
 		end
 	end
 end
 
 local function EvaluateParryTriggers()
 	local localChar = LocalPlayer.Character
-	if not localChar then return end
+	if not localChar then
+		return
+	end
 	local localRoot = localChar:FindFirstChild("HumanoidRootPart")
-	if not localRoot then return end
+	if not localRoot then
+		return
+	end
 
 	LocalTracker:Update(localChar)
 
@@ -868,8 +996,15 @@ local function EvaluateParryTriggers()
 					local key = character.Name .. animIdStr
 					if not LoggedAnimIds[key] then
 						LoggedAnimIds[key] = true
-						print(string.format("[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | SHARED (on local too)",
-							character.Name, animIdStr, tostring(anim.Name), anim.TimePosition or 0))
+						print(
+							string.format(
+								"[AutoParry ALL] %s | ID: %s | Name: %s | TimePos: %.3f | SHARED (on local too)",
+								character.Name,
+								animIdStr,
+								tostring(anim.Name),
+								anim.TimePosition or 0
+							)
+						)
 					end
 				end
 			end
@@ -881,9 +1016,18 @@ local function EvaluateParryTriggers()
 		if not currentActiveIds[key] then
 			if not val.Processed and val.BlockExpire and val.BlockExpire > now then
 				if LogAllAnims then
-					print(string.format("[AutoParry ACTION] %s | ANIM ENDED - keeping registry (block window still pending: expire=%.3f now=%.3f) | %s",
-						val.AnimationId and GameConfig[tostring(val.AnimationId)] and GameConfig[tostring(val.AnimationId)].DisplayName or "?",
-						val.BlockExpire, now, tostring(val.AnimationId)))
+					print(
+						string.format(
+							"[AutoParry ACTION] %s | ANIM ENDED - keeping registry (block window still pending: expire=%.3f now=%.3f) | %s",
+							val.AnimationId
+									and GameConfig[tostring(val.AnimationId)]
+									and GameConfig[tostring(val.AnimationId)].DisplayName
+								or "?",
+							val.BlockExpire,
+							now,
+							tostring(val.AnimationId)
+						)
+					)
 				end
 			else
 				AnimationRegistry[key] = nil
@@ -1023,13 +1167,17 @@ end
 -- ==========================================
 
 local function ClearAllEspTrackers()
-	if not ESP_Utility then return end
+	if not ESP_Utility then
+		return
+	end
 	for char, tracker in pairs(EspTrackers) do
 		if tracker and tracker.Object and tracker.Object.Address then
 			ESP_Utility.TrackersToUpdate[tracker.Object.Address] = nil
 		end
 		if tracker and tracker.Destroy then
-			pcall(function() tracker:Destroy() end)
+			pcall(function()
+				tracker:Destroy()
+			end)
 		end
 	end
 	EspTrackers = {}
@@ -1061,15 +1209,23 @@ local MultiTarget = true
 local UseMouseTarget = true
 
 local function GetMouseWorldPos()
-	if not mouse then return nil end
-	local ok, hit = pcall(function() return mouse.Hit end)
-	if not ok or not hit then return nil end
+	if not mouse then
+		return nil
+	end
+	local ok, hit = pcall(function()
+		return mouse.Hit
+	end)
+	if not ok or not hit then
+		return nil
+	end
 	return hit.Position
 end
 
 local function IsAlreadyTargeted(char)
 	for _, existing in ipairs(TargetCharacters) do
-		if existing == char then return true end
+		if existing == char then
+			return true
+		end
 	end
 	return false
 end
@@ -1081,14 +1237,18 @@ local function CycleEvent()
 			UpdateTargetCharacters({})
 		end
 		if not AutoTargetNearest then
-			pcall(function() Lib:Notify("Cycle", "No targets found", 2, "warning") end)
+			pcall(function()
+				Lib:Notify("Cycle", "No targets found", 2, "warning")
+			end)
 		end
 		return
 	end
 
 	local localChar = LocalPlayer.Character
 	local localRoot = localChar and localChar:FindFirstChild("HumanoidRootPart")
-	if not localRoot then return end
+	if not localRoot then
+		return
+	end
 
 	local valid = {}
 	for _, char in ipairs(allCharacters) do
@@ -1107,13 +1267,17 @@ local function CycleEvent()
 			UpdateTargetCharacters({})
 		end
 		if not AutoTargetNearest then
-			pcall(function() Lib:Notify("Cycle", "No targets in range [" .. MaxCycleRange .. " studs]", 2, "warning") end)
+			pcall(function()
+				Lib:Notify("Cycle", "No targets in range [" .. MaxCycleRange .. " studs]", 2, "warning")
+			end)
 		end
 		return
 	end
 
 	if AutoTargetNearest then
-		table.sort(valid, function(a, b) return a.Distance < b.Distance end)
+		table.sort(valid, function(a, b)
+			return a.Distance < b.Distance
+		end)
 		if MultiTarget then
 			local finalTargets = {}
 			for i = 1, math.min(3, #valid) do
@@ -1122,9 +1286,14 @@ local function CycleEvent()
 			local sameSet = #finalTargets == #TargetCharacters
 			if sameSet then
 				local existing = {}
-				for _, c in ipairs(TargetCharacters) do existing[c] = true end
+				for _, c in ipairs(TargetCharacters) do
+					existing[c] = true
+				end
 				for _, c in ipairs(finalTargets) do
-					if not existing[c] then sameSet = false break end
+					if not existing[c] then
+						sameSet = false
+						break
+					end
 				end
 			end
 			if not sameSet then
@@ -1132,7 +1301,9 @@ local function CycleEvent()
 			end
 		else
 			local nearest = valid[1].Character
-			if IsAlreadyTargeted(nearest) then return end
+			if IsAlreadyTargeted(nearest) then
+				return
+			end
 			UpdateTargetCharacters({ nearest })
 		end
 		return
@@ -1154,19 +1325,26 @@ local function CycleEvent()
 			if bestChar then
 				if IsAlreadyTargeted(bestChar) then
 					for i, v in ipairs(valid) do
-						if v.Character == bestChar then CurrentIndex = i break end
+						if v.Character == bestChar then
+							CurrentIndex = i
+							break
+						end
 					end
 					local nextIdx = (CurrentIndex % #valid) + 1
 					bestChar = valid[nextIdx].Character
 				end
 				UpdateTargetCharacters({ bestChar })
-				pcall(function() Lib:Notify("Cycle", "Locked: " .. bestChar.Name, 2, "info") end)
+				pcall(function()
+					Lib:Notify("Cycle", "Locked: " .. bestChar.Name, 2, "info")
+				end)
 				return
 			end
 		end
 	end
 
-	table.sort(valid, function(a, b) return a.Distance < b.Distance end)
+	table.sort(valid, function(a, b)
+		return a.Distance < b.Distance
+	end)
 
 	if MultiTarget then
 		local finalTargets = {}
@@ -1174,12 +1352,16 @@ local function CycleEvent()
 			table.insert(finalTargets, valid[i].Character)
 		end
 		UpdateTargetCharacters(finalTargets)
-		pcall(function() Lib:Notify("Cycle", string.format("%d targets locked", #finalTargets), 2, "success") end)
+		pcall(function()
+			Lib:Notify("Cycle", string.format("%d targets locked", #finalTargets), 2, "success")
+		end)
 	else
 		CurrentIndex = (CurrentIndex % #valid) + 1
 		local selected = valid[CurrentIndex].Character
 		UpdateTargetCharacters({ selected })
-		pcall(function() Lib:Notify("Cycle", "Locked: " .. selected.Name, 2, "info") end)
+		pcall(function()
+			Lib:Notify("Cycle", "Locked: " .. selected.Name, 2, "info")
+		end)
 	end
 end
 
@@ -1196,18 +1378,28 @@ local function StartOrbListener()
 		return
 	end
 	orbConnection = RS.Heartbeat:Connect(function()
-		if not AutoParryEnabled then return end
+		if not AutoParryEnabled then
+			return
+		end
 		local now = os.clock()
-		if now - lastOrbCheck < 0.1 then return end
+		if now - lastOrbCheck < 0.1 then
+			return
+		end
 		lastOrbCheck = now
 
 		local char = LocalPlayer.Character
-		if not char then return end
+		if not char then
+			return
+		end
 		local hrp = char:FindFirstChild("HumanoidRootPart")
-		if not hrp then return end
+		if not hrp then
+			return
+		end
 		local myPos = hrp.Position
 		local thrown = Workspace:FindFirstChild("Thrown")
-		if not thrown then return end
+		if not thrown then
+			return
+		end
 		for _, v in ipairs(thrown:GetChildren()) do
 			if (v.name == "ArdourBall2" or v.name == "ArdourBall") and v:IsA("BasePart") then
 				local dist = (myPos - v.Position).Magnitude
@@ -1376,7 +1568,9 @@ local defaultFov = 70
 
 pcall(function()
 	local cam = Workspace.CurrentCamera
-	if cam then defaultFov = cam.FieldOfView or 70 end
+	if cam then
+		defaultFov = cam.FieldOfView or 70
+	end
 end)
 
 miscSec:Toggle("custom fov", false, function(v)
@@ -1481,7 +1675,9 @@ end)
 local lastCycleCheck = 0
 
 local parryConn = RS.Heartbeat:Connect(function()
-	if not isrbxactive() then return end
+	if not isrbxactive() then
+		return
+	end
 
 	if iskeypressed(0x58) then
 		local now = os.clock()
@@ -1495,10 +1691,14 @@ local parryConn = RS.Heartbeat:Connect(function()
 		LogTargetAnimations()
 	end
 
-	if not AutoParryEnabled then return end
+	if not AutoParryEnabled then
+		return
+	end
 
 	local pg = LocalPlayer.PlayerGui
-	if pg and pg:FindFirstChild("RhythmServiceUI") then return end
+	if pg and pg:FindFirstChild("RhythmServiceUI") then
+		return
+	end
 
 	EvaluateParryTriggers()
 	ParryTask()
@@ -1523,18 +1723,28 @@ end)
 -- ==========================================
 
 _G.GakuranParryCleanup = function()
-	pcall(function() parryConn:Disconnect() end)
 	pcall(function()
-		if orbConnection then orbConnection:Disconnect() end
+		parryConn:Disconnect()
 	end)
 	pcall(function()
-		if animAddedConn then animAddedConn:Disconnect() end
+		if orbConnection then
+			orbConnection:Disconnect()
+		end
 	end)
 	pcall(function()
-		if inputBeganConn then inputBeganConn:Disconnect() end
+		if animAddedConn then
+			animAddedConn:Disconnect()
+		end
 	end)
 	pcall(function()
-		if _G.GakranEspCleanup then _G.GakranEspCleanup() end
+		if inputBeganConn then
+			inputBeganConn:Disconnect()
+		end
+	end)
+	pcall(function()
+		if _G.GakranEspCleanup then
+			_G.GakranEspCleanup()
+		end
 	end)
 	if FovEnabled then
 		pcall(function()
