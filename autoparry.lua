@@ -201,7 +201,7 @@ local RawConfig = {
 		["rbxassetid://116642061934550"] = { DisplayName = "1stM1", ReactionTime = 0.12 },
 		["rbxassetid://115234849770695"] = { DisplayName = "2ndM1", ReactionTime = 0.12 },
 		["rbxassetid://85554794950365"] = { DisplayName = "3rdM1", ReactionTime = 0.12 },
-		["rbxassetid://73777821288331"] = { DisplayName = "4thM1", ReactionTime = 0.01 },
+		["rbxassetid://73777821288331"] = { DisplayName = "4thM1", ReactionTime = 0 },
 		["rbxassetid://99309341097380"] = { DisplayName = "M2", ReactionTime = 0.1 },
 		M1Time = 0.12,
 	},
@@ -1573,11 +1573,20 @@ pcall(function()
 	end
 end)
 
+local fovConn = nil
 miscSec:Toggle("custom fov", false, function(v)
 	FovEnabled = v
+	if fovConn then
+		pcall(function() fovConn:Disconnect() end)
+		fovConn = nil
+	end
 	if v then
-		pcall(function()
-			Workspace.CurrentCamera.FieldOfView = FovValue
+		fovConn = RunService.RenderStepped:Connect(function()
+			if FovEnabled then
+				pcall(function()
+					Workspace.CurrentCamera.FieldOfView = FovValue
+				end)
+			end
 		end)
 	else
 		pcall(function()
@@ -1739,6 +1748,11 @@ _G.GakuranParryCleanup = function()
 	pcall(function()
 		if inputBeganConn then
 			inputBeganConn:Disconnect()
+		end
+	end)
+	pcall(function()
+		if fovConn then
+			fovConn:Disconnect()
 		end
 	end)
 	pcall(function()
