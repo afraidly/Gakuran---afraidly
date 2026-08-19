@@ -1084,7 +1084,14 @@ local function OnSuccessfulParry()
 		if LastPendingRegData then
 			local attackConfig = GameConfig[LastPendingRegData.AnimationId]
 			if attackConfig then
-				print(string.format("[AutoParry] Parry Success: %s %s", attackConfig.Style, attackConfig.DisplayName))
+				pcall(function()
+					Lib:Notify(
+						"Parry Success",
+						string.format("%s %s", attackConfig.Style, attackConfig.DisplayName),
+						2,
+						"error"
+					)
+				end)
 			end
 		end
 		ResetParryState()
@@ -1229,9 +1236,11 @@ local function CycleEvent()
 		if #TargetCharacters > 0 then
 			UpdateTargetCharacters({})
 		end
-			if not AutoTargetNearest then
-				print("[AutoParry] No targets found")
-			end
+		if not AutoTargetNearest then
+			pcall(function()
+				Lib:Notify("Cycle", "No targets found", 2, "error")
+			end)
+		end
 		return
 	end
 
@@ -1258,7 +1267,9 @@ local function CycleEvent()
 			UpdateTargetCharacters({})
 		end
 		if not AutoTargetNearest then
-			print("[AutoParry] No targets in range [" .. MaxCycleRange .. " studs]")
+			pcall(function()
+				Lib:Notify("Cycle", "No targets in range [" .. MaxCycleRange .. " studs]", 2, "error")
+			end)
 		end
 		return
 	end
@@ -1323,7 +1334,9 @@ local function CycleEvent()
 					bestChar = valid[nextIdx].Character
 				end
 				UpdateTargetCharacters({ bestChar })
-				print("[AutoParry] Locked: " .. bestChar.Name)
+				pcall(function()
+					Lib:Notify("Cycle", "Locked: " .. bestChar.Name, 2, "error")
+				end)
 				return
 			end
 		end
@@ -1339,12 +1352,16 @@ local function CycleEvent()
 			table.insert(finalTargets, valid[i].Character)
 		end
 		UpdateTargetCharacters(finalTargets)
-		print(string.format("[AutoParry] %d targets locked", #finalTargets))
+		pcall(function()
+			Lib:Notify("Cycle", string.format("%d targets locked", #finalTargets), 2, "error")
+		end)
 	else
 		CurrentIndex = (CurrentIndex % #valid) + 1
 		local selected = valid[CurrentIndex].Character
 		UpdateTargetCharacters({ selected })
-		print("[AutoParry] Locked: " .. selected.Name)
+		pcall(function()
+			Lib:Notify("Cycle", "Locked: " .. selected.Name, 2, "error")
+		end)
 	end
 end
 
