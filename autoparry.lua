@@ -1439,26 +1439,7 @@ local apToggle = apSetSec:Toggle("auto parry", false, function(v)
 		UpdateTargetCharacters({})
 	end
 end)
-
-apSetSec:Label("Set auto parry keybind below")
-
-local apKeybindKey = nil
-local apKeybindMode = "Toggle"
-
-apSetSec:Keybind("auto parry", nil, function(key)
-	apKeybindKey = key
-	print("[AutoParry] Keybind set to: " .. tostring(key))
-end)
-
-local apKeybindConn
-apKeybindConn = UIS.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
-	if not apKeybindKey then return end
-	if input.KeyCode ~= apKeybindKey then return end
-	if apKeybindMode == "Toggle" then
-		apToggle:Set(not AutoParryEnabled)
-	end
-end)
+_G.GakuranAutoParryToggle = apToggle
 
 apSetSec:Toggle("auto dodge", true, function(v)
 	AutoDodgeEnabled = v
@@ -1741,11 +1722,6 @@ _G.GakuranParryCleanup = function()
 	pcall(function()
 		if fovConn then
 			fovConn:Disconnect()
-		end
-	end)
-	pcall(function()
-		if apKeybindConn then
-			apKeybindConn:Disconnect()
 		end
 	end)
 	pcall(function()
