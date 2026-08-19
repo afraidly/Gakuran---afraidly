@@ -1441,12 +1441,6 @@ local apToggle = apSetSec:Toggle("auto parry", false, function(v)
 end)
 _G.GakuranAutoParryToggle = apToggle
 
-local apKeybindKey = nil
-local apKeybindLabel = apSetSec:Keybind("auto parry keybind", nil, function(key)
-	apKeybindKey = key
-	print("[AutoParry] Keybind set to: " .. tostring(key))
-end)
-
 apSetSec:Toggle("auto dodge", true, function(v)
 	AutoDodgeEnabled = v
 end)
