@@ -136,7 +136,7 @@ function AnimationTracker.new(IgnoreIds)
     return self
 end
 
-function AnimationTracker:Update(character)
+function AnimationTracker:Update(character, includeIgnored)
     local tracksPlaying = GetPlayingAnimationTracks(character)
     if not tracksPlaying then return {} end
 
@@ -147,31 +147,27 @@ function AnimationTracker:Update(character)
         local address = tracksPlaying[i]
         currentAddresses[address] = true
 
-        local info = self._cachedTracks[address]
-        local newlyExtracted = false
-
-        if not info then
+        local prevInfo = self._cachedTracks[address]
+        local info
+        if prevInfo then
+            info = prevInfo
+            info.TimePosition = GetTimePosition(address) or info.TimePosition
+        else
             info = ExtractAnimationTrackInfo(address)
-            if info then
-                self._cachedTracks[address] = info
-                newlyExtracted = true
-            end
+            if not info then continue end
+            self._cachedTracks[address] = info
         end
 
-        if info then
-            local assetId = info.AnimationId
-            local numericId = assetId and tonumber(string.match(tostring(assetId), "%d+"))
-            if numericId and table.find(self.IgnoreIds, numericId) then continue end
+        local assetId = info.AnimationId
+        local numericId = assetId and tonumber(string.match(tostring(assetId), "%d+"))
+        if not includeIgnored and numericId and table.find(self.IgnoreIds, numericId) then continue end
 
-            if newlyExtracted then
-                self.AnimationAdded:Fire(info)
-            end
-
-            local liveTime = GetTimePosition(address) or info.TimePosition
-            info.TimePosition = liveTime
-            self.AnimationUpdated:Fire(info, liveTime)
-            table.insert(activeSnapshot, info)
+        if not prevInfo then
+            self.AnimationAdded:Fire(info)
         end
+
+        self.AnimationUpdated:Fire(info, info.TimePosition)
+        table.insert(activeSnapshot, info)
     end
 
     for address, cachedInfo in pairs(self._cachedTracks) do
@@ -184,7 +180,7 @@ function AnimationTracker:Update(character)
     return activeSnapshot
 end
 
-print("[AnimationTracker] Functions were imported v1.1")
+print("[AnimationTracker] Functions were imported v1.2")
 
 _G.AnimationTracker = AnimationTracker
 return AnimationTracker
