@@ -1,6 +1,6 @@
 -- ESP Utility (customized for Gakuran)
 -- Reads settings from _G.GakuranEspSettings
--- Original by artxficial, modified for Gakuran auto-parry
+-- Original by artxficial, modified by afraidly
 
 local RunService = game:GetService("RunService")
 local ESP_Utility = {}
@@ -504,7 +504,7 @@ local espLastUpdate = 0
 UpdateThread = RunService.RenderStepped:Connect(function(dt)
 	if not next(ESP_Utility.TrackersToUpdate) then return end
 	local now = os.clock()
-	if now - espLastUpdate < 0.033 then return end
+	if now - espLastUpdate < 0.05 then return end
 	espLastUpdate = now
 
 	for i, v in pairs(ESP_Utility.TrackersToUpdate) do
