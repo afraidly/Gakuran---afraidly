@@ -1440,7 +1440,25 @@ local apToggle = apSetSec:Toggle("auto parry", false, function(v)
 	end
 end)
 
-apToggle:AddKeybind(nil, "Toggle")
+apSetSec:Label("Set auto parry keybind below")
+
+local apKeybindKey = nil
+local apKeybindMode = "Toggle"
+
+apSetSec:Keybind("auto parry", nil, function(key)
+	apKeybindKey = key
+	print("[AutoParry] Keybind set to: " .. tostring(key))
+end)
+
+local apKeybindConn
+apKeybindConn = UIS.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
+	if not apKeybindKey then return end
+	if input.KeyCode ~= apKeybindKey then return end
+	if apKeybindMode == "Toggle" then
+		apToggle:Set(not AutoParryEnabled)
+	end
+end)
 
 apSetSec:Toggle("auto dodge", true, function(v)
 	AutoDodgeEnabled = v
@@ -1572,35 +1590,7 @@ pcall(function()
 end)
 
 local fovConn = nil
-miscSec:Toggle("custom fov", false, function(v)
-	FovEnabled = v
-	if fovConn then
-		pcall(function() fovConn:Disconnect() end)
-		fovConn = nil
-	end
-	if v then
-		fovConn = RS.RenderStepped:Connect(function()
-			if FovEnabled then
-				pcall(function()
-					Workspace.CurrentCamera.FieldOfView = FovValue
-				end)
-			end
-		end)
-	else
-		pcall(function()
-			Workspace.CurrentCamera.FieldOfView = defaultFov
-		end)
-	end
-end)
-
-miscSec:Slider("fov", 70, 1, 1, 120, "", function(v)
-	FovValue = v
-	if FovEnabled then
-		pcall(function()
-			Workspace.CurrentCamera.FieldOfView = v
-		end)
-	end
-end)
+miscSec:Label("FOV slider disabled (game overrides it)")
 
 -- Style config tab
 local styleSub = combatTab:Sub("Styles", "crown")
@@ -1751,6 +1741,11 @@ _G.GakuranParryCleanup = function()
 	pcall(function()
 		if fovConn then
 			fovConn:Disconnect()
+		end
+	end)
+	pcall(function()
+		if apKeybindConn then
+			apKeybindConn:Disconnect()
 		end
 	end)
 	pcall(function()
