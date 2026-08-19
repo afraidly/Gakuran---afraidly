@@ -16,6 +16,7 @@ end
 local function getSettings()
 	return _G.GakuranEspSettings or {
 		BoxMode = "bounding",
+		ShowBox = true,
 		ShowName = true,
 		ShowDistance = true,
 		ShowHealth = false,
@@ -251,6 +252,10 @@ function ESP_Utility:_DetermineVisibility()
 
 		local visible = data.Visible
 
+		if drawingName == "Square" and not S.ShowBox then
+			DrawingObject.Visible = false
+			continue
+		end
 		if drawingName == "Name" and not S.ShowName then
 			DrawingObject.Visible = false
 			continue

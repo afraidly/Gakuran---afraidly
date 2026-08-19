@@ -343,6 +343,7 @@ local CurrentIndex = 1
 
 local EspSettings = {
 	BoxMode = "static",
+	ShowBox = true,
 	ShowName = true,
 	ShowDistance = true,
 	ShowHealth = false,
@@ -1697,20 +1698,49 @@ local espTextSec = visSub:Section("Text", "Left")
 local espColSec = visSub:Section("Colors", "Right")
 local miscSec = visSub:Section("Misc", "Right")
 
+local VisualsEnabled = true
+
+miscSec:Toggle("visuals enabled", true, function(v)
+	VisualsEnabled = v
+	if not v then
+		EspSettings.ShowBox = false
+		EspSettings.ShowName = false
+		EspSettings.ShowDistance = false
+		EspSettings.ShowHealth = false
+	else
+		EspSettings.ShowBox = true
+		EspSettings.ShowName = true
+		EspSettings.ShowDistance = true
+		EspSettings.ShowHealth = false
+	end
+end)
+
+espBoxSec:Toggle("show box", true, function(v)
+	if VisualsEnabled then
+		EspSettings.ShowBox = v
+	end
+end)
+
 espBoxSec:Slider("box thickness", 1, 1, 1, 5, "", function(v)
 	EspSettings.BoxThickness = v
 end)
 
 espTextSec:Toggle("show name", true, function(v)
-	EspSettings.ShowName = v
+	if VisualsEnabled then
+		EspSettings.ShowName = v
+	end
 end)
 
 espTextSec:Toggle("show distance", true, function(v)
-	EspSettings.ShowDistance = v
+	if VisualsEnabled then
+		EspSettings.ShowDistance = v
+	end
 end)
 
 espTextSec:Toggle("show health bar", false, function(v)
-	EspSettings.ShowHealth = v
+	if VisualsEnabled then
+		EspSettings.ShowHealth = v
+	end
 end)
 
 espTextSec:Slider("text size", 12, 1, 8, 24, "", function(v)
