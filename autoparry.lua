@@ -1439,8 +1439,13 @@ local apToggle = apSetSec:Toggle("auto parry", false, function(v)
 		UpdateTargetCharacters({})
 	end
 end)
-apToggle:AddKeybind(nil, "Toggle")
 _G.GakuranAutoParryToggle = apToggle
+
+local apKeybindKey = nil
+local apKeybindLabel = apSetSec:Keybind("auto parry keybind", nil, function(key)
+	apKeybindKey = key
+	print("[AutoParry] Keybind set to: " .. tostring(key))
+end)
 
 apSetSec:Toggle("auto dodge", true, function(v)
 	AutoDodgeEnabled = v
@@ -1633,8 +1638,14 @@ end)
 local lastXCycle = 0
 
 local inputBeganConn = UIS.InputBegan:Connect(function(input, gameProcessed)
+	if gameProcessed then return end
 	local pg = LocalPlayer.PlayerGui
 	if pg and pg:FindFirstChild("RhythmServiceUI") then
+		return
+	end
+
+	if apKeybindKey and input.KeyCode == apKeybindKey then
+		apToggle:Set(not AutoParryEnabled)
 		return
 	end
 
