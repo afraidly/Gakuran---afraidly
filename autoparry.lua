@@ -1440,9 +1440,7 @@ local apToggle = apSetSec:Toggle("auto parry", false, function(v)
 	end
 end)
 
-apToggle:AddKeybind(nil, "Toggle", function(state)
-	apToggle:Set(state)
-end)
+apToggle:AddKeybind(nil, "Toggle")
 
 apSetSec:Toggle("auto dodge", true, function(v)
 	AutoDodgeEnabled = v
@@ -1581,7 +1579,7 @@ miscSec:Toggle("custom fov", false, function(v)
 		fovConn = nil
 	end
 	if v then
-		fovConn = RunService.RenderStepped:Connect(function()
+		fovConn = RS.RenderStepped:Connect(function()
 			if FovEnabled then
 				pcall(function()
 					Workspace.CurrentCamera.FieldOfView = FovValue
