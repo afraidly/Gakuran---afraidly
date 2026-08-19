@@ -243,7 +243,7 @@ end
 -- ==========================================
 
 local SelectedFolder = nil
-local AutoParryRange = 15
+local AutoParryRange = 10
 local MaxCycleRange = 30
 local ParryWindow = 0.2
 local ProbabilityToParry = 100
