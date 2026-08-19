@@ -1084,14 +1084,7 @@ local function OnSuccessfulParry()
 		if LastPendingRegData then
 			local attackConfig = GameConfig[LastPendingRegData.AnimationId]
 			if attackConfig then
-				pcall(function()
-					Lib:Notify(
-						"Parry Success",
-						string.format("%s %s", attackConfig.Style, attackConfig.DisplayName),
-						2,
-						"success"
-					)
-				end)
+				print(string.format("[AutoParry] Parry Success: %s %s", attackConfig.Style, attackConfig.DisplayName))
 			end
 		end
 		ResetParryState()
@@ -1236,11 +1229,9 @@ local function CycleEvent()
 		if #TargetCharacters > 0 then
 			UpdateTargetCharacters({})
 		end
-		if not AutoTargetNearest then
-			pcall(function()
-				Lib:Notify("Cycle", "No targets found", 2, "warning")
-			end)
-		end
+			if not AutoTargetNearest then
+				print("[AutoParry] No targets found")
+			end
 		return
 	end
 
@@ -1267,9 +1258,7 @@ local function CycleEvent()
 			UpdateTargetCharacters({})
 		end
 		if not AutoTargetNearest then
-			pcall(function()
-				Lib:Notify("Cycle", "No targets in range [" .. MaxCycleRange .. " studs]", 2, "warning")
-			end)
+			print("[AutoParry] No targets in range [" .. MaxCycleRange .. " studs]")
 		end
 		return
 	end
@@ -1334,9 +1323,7 @@ local function CycleEvent()
 					bestChar = valid[nextIdx].Character
 				end
 				UpdateTargetCharacters({ bestChar })
-				pcall(function()
-					Lib:Notify("Cycle", "Locked: " .. bestChar.Name, 2, "info")
-				end)
+				print("[AutoParry] Locked: " .. bestChar.Name)
 				return
 			end
 		end
@@ -1352,16 +1339,12 @@ local function CycleEvent()
 			table.insert(finalTargets, valid[i].Character)
 		end
 		UpdateTargetCharacters(finalTargets)
-		pcall(function()
-			Lib:Notify("Cycle", string.format("%d targets locked", #finalTargets), 2, "success")
-		end)
+		print(string.format("[AutoParry] %d targets locked", #finalTargets))
 	else
 		CurrentIndex = (CurrentIndex % #valid) + 1
 		local selected = valid[CurrentIndex].Character
 		UpdateTargetCharacters({ selected })
-		pcall(function()
-			Lib:Notify("Cycle", "Locked: " .. selected.Name, 2, "info")
-		end)
+		print("[AutoParry] Locked: " .. selected.Name)
 	end
 end
 
@@ -1630,9 +1613,12 @@ end)
 -- ==========================================
 
 local lastXCycle = 0
+local lastZToggle = 0
 
 local inputBeganConn = UIS.InputBegan:Connect(function(input, gameProcessed)
-	if gameProcessed then return end
+	if gameProcessed then
+		return
+	end
 	local pg = LocalPlayer.PlayerGui
 	if pg and pg:FindFirstChild("RhythmServiceUI") then
 		return
@@ -1668,6 +1654,14 @@ local parryConn = RS.Heartbeat:Connect(function()
 		if now - lastXCycle > 0.3 then
 			lastXCycle = now
 			CycleEvent()
+		end
+	end
+
+	if iskeypressed(0x5A) then
+		local now = os.clock()
+		if now - lastZToggle > 0.3 then
+			lastZToggle = now
+			apToggle:Set(not AutoParryEnabled)
 		end
 	end
 
