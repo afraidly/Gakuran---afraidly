@@ -1,6 +1,6 @@
 -- ESP Utility (customized for Gakuran)
 -- Reads settings from _G.GakuranEspSettings
--- Original by artxficial, modified by afraidly
+-- Original by artxficial, modified for Gakuran auto-parry
 
 local RunService = game:GetService("RunService")
 local ESP_Utility = {}
