@@ -465,6 +465,54 @@ local function GetHeightMultiplierForCharacter(targetChar)
 	return ok and h or 1
 end
 
+local HITBOX_TOLERANCE = 2
+
+local function IsHitboxOverlapping(targetChar)
+	if not targetChar then
+		return false
+	end
+	local hitboxFolder = Workspace:FindFirstChild("Hitboxes")
+	if not hitboxFolder then
+		return false
+	end
+
+	local targetName = targetChar.Name
+	local localChar = LocalPlayer.Character
+	if not localChar then
+		return false
+	end
+	local myHrp = localChar:FindFirstChild("HumanoidRootPart")
+	if not myHrp then
+		return false
+	end
+
+	local myPos = myHrp.Position
+	local mySize = myHrp.Size
+
+	local ok, result = pcall(function()
+		for _, hitbox in ipairs(hitboxFolder:GetChildren()) do
+			if hitbox:IsA("BasePart") and hitbox.Parent then
+				local hOwner = hitbox:FindFirstChild("Owner")
+				local ownerName = hOwner and hOwner:IsA("StringValue") and hOwner.Value or ""
+				if ownerName == targetName then
+					local hPos = hitbox.Position
+					local hSize = hitbox.Size
+					if hPos and hSize then
+						local dx = math.abs(hPos.X - myPos.X) - (hSize.X + mySize.X) / 2
+						local dy = math.abs(hPos.Y - myPos.Y) - (hSize.Y + mySize.Y) / 2
+						local dz = math.abs(hPos.Z - myPos.Z) - (hSize.Z + mySize.Z) / 2
+						if dx <= HITBOX_TOLERANCE and dy <= HITBOX_TOLERANCE and dz <= HITBOX_TOLERANCE then
+							return true
+						end
+					end
+				end
+			end
+		end
+		return false
+	end)
+	return ok and result or false
+end
+
 -- ==========================================
 -- Auto-Style Detection
 -- ==========================================
@@ -866,6 +914,21 @@ local function EvaluateAnimation(anim, character, localChar, localRoot, targetRo
 			print(
 				string.format(
 					"[AutoParry ACTION] %s | SKIP (too far, dist=%.1f) | %s | %s",
+					attackConfig.DisplayName,
+					dist,
+					animIdStr,
+					attackConfig.Style
+				)
+			)
+		end
+		return
+	end
+
+	if not IsHitboxOverlapping(character) then
+		if LogAllAnims then
+			print(
+				string.format(
+					"[AutoParry ACTION] %s | SKIP (no hitbox overlap, dist=%.1f) | %s | %s",
 					attackConfig.DisplayName,
 					dist,
 					animIdStr,
@@ -1603,6 +1666,10 @@ elseif table.find(folderNames, "Live") then
 elseif #folderNames > 0 then
 	SelectedFolder = folderNames[1]
 end
+
+apFolSec:Slider("hitbox tolerance", 2, 1, 0, 10, "", function(v)
+	HITBOX_TOLERANCE = v
+end)
 
 apFolSec:Slider("max cycle range", 30, 1, 5, 100, "", function(v)
 	MaxCycleRange = v
