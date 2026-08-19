@@ -230,7 +230,7 @@ for styleName, assets in pairs(RawConfig) do
 			flat[k] = v
 		end
 		flat.Style = styleName
-		if data.DisplayName ~= "M2" and assets.M1Time then
+		if not data.ReactionTime and data.DisplayName ~= "M2" and assets.M1Time then
 			flat.ReactionTime = assets.M1Time
 		elseif not data.ReactionTime then
 			flat.ReactionTime = 0.1
