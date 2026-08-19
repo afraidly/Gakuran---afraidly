@@ -1439,6 +1439,7 @@ local apToggle = apSetSec:Toggle("auto parry", false, function(v)
 		UpdateTargetCharacters({})
 	end
 end)
+apToggle:AddKeybind(nil, "Toggle")
 _G.GakuranAutoParryToggle = apToggle
 
 apSetSec:Toggle("auto dodge", true, function(v)
@@ -1571,7 +1572,7 @@ pcall(function()
 end)
 
 local fovConn = nil
-miscSec:Label("FOV slider disabled (game overrides it)")
+miscSec:Info("FOV slider removed - wait for the next update and use Matcha's FOV changer instead")
 
 -- Style config tab
 local styleSub = combatTab:Sub("Styles", "crown")
