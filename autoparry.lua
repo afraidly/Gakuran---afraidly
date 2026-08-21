@@ -1865,19 +1865,24 @@ local parryConn = RS.RenderStepped:Connect(function()
 		return
 	end
 
-	if iskeypressed(0x58) then
-		local now = os.clock()
-		if now - lastXCycle > 0.3 then
-			lastXCycle = now
-			CycleEvent()
-		end
-	end
+	local pg = LocalPlayer.PlayerGui
+	local inRhythm = pg and pg:FindFirstChild("RhythmServiceUI") ~= nil
 
-	if iskeypressed(0x5A) then
-		local now = os.clock()
-		if now - lastZToggle > 0.3 then
-			lastZToggle = now
-			apToggle:Set(not AutoParryEnabled)
+	if not inRhythm then
+		if iskeypressed(0x58) then
+			local now = os.clock()
+			if now - lastXCycle > 0.3 then
+				lastXCycle = now
+				CycleEvent()
+			end
+		end
+
+		if iskeypressed(0x5A) then
+			local now = os.clock()
+			if now - lastZToggle > 0.3 then
+				lastZToggle = now
+				apToggle:Set(not AutoParryEnabled)
+			end
 		end
 	end
 
@@ -1889,8 +1894,7 @@ local parryConn = RS.RenderStepped:Connect(function()
 		return
 	end
 
-	local pg = LocalPlayer.PlayerGui
-	if pg and pg:FindFirstChild("RhythmServiceUI") then
+	if inRhythm then
 		return
 	end
 
